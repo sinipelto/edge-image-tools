@@ -1,0 +1,56 @@
+PROVISION IOT EDGE DEVICE (Ubuntu 18.04 LTS / Ubuntu 20.04 LTS)
+
+wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+sudo dpkg -i packages-microsoft-prod.deb
+rm packages-microsoft-prod.deb
+
+wget https://packages.microsoft.com/config/ubuntu/18.04/multiarch/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+sudo dpkg -i packages-microsoft-prod.deb
+rm packages-microsoft-prod.deb
+
+#OLD curl https://packages.microsoft.com/config/ubuntu/18.04/multiarch/prod.list > ./microsoft-prod.list
+#OLD sudo cp ./microsoft-prod.list /etc/apt/sources.list.d/
+
+#OLD curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+#OLD sudo cp ./microsoft.gpg /etc/apt/trusted.gpg.d/
+
+
+
+Run as pure ROOT:
+
+curl "https://packages.microsoft.com/config/ubuntu/18.04/multiarch/prod.list" > /etc/apt/sources.list.d/microsoft-prod.list
+
+curl "https://packages.microsoft.com/keys/microsoft.asc" | gpg --dearmor > /etc/apt/trusted.gpg.d/microsoft.gpg
+
+
+-----------------------------
+
+Run using SUDO:
+
+conn_str="<REMOVED>"
+
+sudo curl -o /etc/apt/sources.list.d/microsoft-prod.list "https://packages.microsoft.com/config/ubuntu/18.04/multiarch/prod.list"
+
+curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null
+
+sudo apt-get update
+
+sudo apt-get install -y moby-engine
+
+#apt list -a aziot-edge aziot-identity-service
+
+sudo apt-get install -y aziot-edge
+
+sudo iotedge config mp --connection-string "${conn_str}"
+
+sudo iotedge config apply
+
+#sudo nano /etc/aziot/config.toml
+
+#sudo iotedge system status
+
+#sudo iotedge system logs
+
+sudo iotedge check
+
+#sudo iotedge list

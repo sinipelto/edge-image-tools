@@ -1,0 +1,10 @@
+version: 2
+wifis:
+  renderer: networkd
+  wlan0:
+    dhcp4: true
+    optional: true
+    access-points:
+      "<REMOVED>":
+        password: "<REMOVED>"
+        hidden: true
