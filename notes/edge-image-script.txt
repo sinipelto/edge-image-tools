@@ -1,0 +1,468 @@
+RASPI PRE-PROVISIONING (IMAGE CREATION STAGE SCRIPT):
+
+TODO LIST:
+
++ DONE
+- TODO
+
++ separate dev mode and prod mode with a flag => check flag for dev operations
++ immediately fail on failed command! unless special handling done => set -e
++ repeated things into variables
++ add support for both ubuntu and raspi os
++ scriptify this sketch
++ repo path and other constant paths from variables
++ add preprovision user, user has dev password, pub key file set, sudo access without password, disable account password in prod mode
++ sudo asks password, add custom user to sudoers => addded user specific file to sudoers.d to disable password prompt for sudo
++ upload packed image to azure! => azure fileshare or blob storage? fileshare uses SMB (NFS not supported well) => Azure file share
++ for raspbian: disable auto resize on first boot!!! => https://raspberrypi.stackexchange.com/questions/56621/temporarily-disable-expand-filesystem-during-first-boot
++ dont disable auto resize -> otherwise no space on rootfs -> adjust resize to fill only full - offset from disk => leave space for persistence
++ expand rootfs a bit during image creation script to ensure provision script can run + critical things done
++ resize rootfs to have space for stuff (e.g. 200% ?) => read mbytes from var, increase X mbytes, resizepart 2 100%, resizefs fill space
++ somehow implement incremental versioning for image files + working update process => store version to file share during create
++ check image version from cloud -> if newer available, run the update
++ qemu chroot not working fully properly on armhf at least => ld preload fix helps!! => add and after remove # with sed
++ wrap scripts vars to ENV vars, and export dev/local values in separate files + create example files without secret values => wrapper script done
++ figure out how to update the expanded image file without copying to temp file
+
+
+- URGENT ISSUE! Raspi OS Arm64 NOT SUPPORTED by Azure IoT Edge!!! => try ubuntu20 arm64 or raspi armhf
+
+- figure out how to distribute connection string in secure, environment-specific, device-specific manner => Azure Device Provisioning Service?
+- implement update logic to fetch new image if greater version available, extract, replace boot&rootfs, reboot
+- create project in azure devops, then create azure (test?) pipline for the devops project? => REPO DONE already + add sources
+- env vars to be set in the pipeline yaml
+- figure out how to read and set ENV vars from the Azure devops UI somehow => easily manage variable values
+- finally construct pipeline to wrap this script => set parameters from ENV to the script, read things from azure given ENV
+
+
+
+
+First off, set interpreter to bash, and zero tolerance for command errors:
+
+#!/bin/bash
+
+# Stop on any error (not piped using ||)
+set -e
+
+# For DEV: Enable debugging (echo all executed lines etc)
+set -x
+
+Raspi preinstalled image needed (to manipulate the rootfs)
+
+Download the zipped source image:
+
+sudo rm -f original.img
+sudo rm -f original.img.xz
+
+
+FROM SCRIPT:
+
+# Raspi OS Lite armhf (32-bit) Latest 2022-01-28
+#srcUrl="https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2022-01-28/2022-01-28-raspios-bullseye-armhf-lite.zip"
+
+# Raspi OS Lite ARM64 Latest 2022-01-28
+srcUrl="https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2022-01-28/2022-01-28-raspios-bullseye-arm64-lite.zip"
+
+# Ubuntu Server 20.04.3 LTS Preinstalled ARM64 Raspi 3/4
+#srcUrl="https://cdimage.ubuntu.com/releases/20.04/release/ubuntu-20.04.3-preinstalled-server-arm64+raspi.img.xz"
+
+
+DETAILED:
+
+# Ubuntu Server 18.04.5 LTS Preinstalled ARM64 Raspi 3
+# 11.02.2022: NOT WORKING -> DOES NOT BOOT -> KERNEL PANIC
+#srcUrl="https://cdimage.ubuntu.com/releases/18.04/release/ubuntu-18.04.5-preinstalled-server-arm64+raspi3.img.xz"
+
+# Ubuntu Server 18.04.5 LTS Preinstalled ARM64 Raspi 4
+#srcUrl="https://cdimage.ubuntu.com/releases/18.04/release/ubuntu-18.04.5-preinstalled-server-arm64+raspi4.img.xz"
+
+
+Ubuntu Server 18.04.5 LTS Arm64 Raspi preinstalled Pi 3:
+
+11.02.2022: TESTED AND NOT WORKING -> DOES NOT BOOT -> KERNEL PANIC
+
+sudo curl -X GET -o original.img.xz "https://cdimage.ubuntu.com/ubuntu/releases/18.04/release/ubuntu-18.04.5-preinstalled-server-arm64+raspi3.img.xz"
+
+
+Ubuntu Server 20.04.3 LTS Preinstalled ARM64 (aarch64) Raspberry Pi 3/4 supported image:
+
+Boots up ok
+Does not connect to WLAN
+Cannot login to ubuntu:ubuntu after boot (needs connecting lan cable?)
+Applies hostname but not locale stuff, or network configs from boot prt
+
+https://cdimage.ubuntu.com/releases/20.04.3/release/ubuntu-20.04.3-preinstalled-server-arm64+raspi.img.xz
+
+sudo curl -X GET -o original.img.xz "https://cdimage.ubuntu.com/releases/20.04.3/release/ubuntu-20.04.3-preinstalled-server-arm64+raspi.img.xz"
+
+
+Raspberry Pi OS Lite ARM64 2022-01-28
+sudo curl -X GET -o original.img.xz "https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2022-01-28/2022-01-28-raspios-bullseye-arm64-lite.zip"
+
+
+Logic for checking file extension => if .xz use unxz if .zip us unzip
+Both have single .img file inside! Ensure name with mv -v *.img name.img
+
+
+Unzip the zip file into image file
+sudo
+
+
+Unzip the xz file into raw image file
+
+sudo unxz -d -k -T 4 -vvvv original.img.xz
+
+
+-> original.img
+
+Check the partitions, offsets & sizes the disk image has eaten
+
+sudo fdisk -l original.img
+
+->
+
+Ubuntu 18.04.5:
+
+Ubuntu 20.04.6:
+
+Disk original.img: 3.1 GiB, 3368303616 bytes, 6578718 sectors
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disklabel type: dos
+Disk identifier: 0xf66f0719
+
+Device        Boot  Start     End Sectors  Size Id Type
+original.img1 *      2048  526335  524288  256M  c W95 FAT32 (LBA)
+original.img2      526336 6578683 6052348  2.9G 83 Linux
+
+The rootfs size (3 gigs) seems fine! It should fit easily for 8gig+ sdcards
+
+We need to mount the paritions as R/W separately
+
+blocksize = 512, Start defines parition start point in blocks
+=> blocksize * blocks = bytes
+
+offset=START, sizelimit=SECTORS
+-> we need to grep / awk the values from the fdisk output
+
+sudo rm -rf /media/part1
+sudo rm -rf /media/part2
+
+sudo mkdir -p /media/part1
+sudo mkdir -p /media/part2
+
+
+Mount the images using the sectors sizes and locations from the fdisk output
+TODO! Collect automatically from fdisk output using (G)AWK
+
+offset1=$(($(sudo fdisk -l original.img | grep "FAT32" | awk '{print $3}') * 512))
+size1=$(($(sudo fdisk -l original.img | grep "FAT32" | awk '{print $5}') * 512))
+
+offset2=$(($(sudo fdisk -l original.img | grep "Linux" | awk '{print $2}') * 512))
+size2=$(($(sudo fdisk -l original.img | grep "Linux" | awk '{print $4}') * 512))
+
+sudo mount -v -o rw,offset=${offset1},sizelimit=${size1} -t vfat original.img /media/part1
+sudo mount -v -o rw,offset=${offset2},sizelimit=${size2} -t ext4 original.img /media/part2
+
+#sudo mount -v -o rw,offset=$((2048*512)),sizelimit=$((524288*512)) -t vfat original.img /media/part1
+#sudo mount -v -o rw,offset=$((526336*512)),sizelimit=$((6052348*512)) -t ext4 original.img /media/part2
+
+The OLD way:
+
+offset1=$(($(${sudoBin} fdisk -o Start,Sectors,Type -l ${imgFile} | grep "FAT" | awk '{print $1}') * 512))
+size1=$(($(${sudoBin} fdisk -o Start,Sectors,Type -l ${imgFile} | grep "FAT" | awk '{print $2}') * 512))
+
+offset2=$(($(${sudoBin} fdisk -o Start,Sectors,Type -l ${imgFile} | grep "Linux" | awk '{print $1}') * 512))
+size2=$(($(${sudoBin} fdisk -o Start,Sectors,Type -l ${imgFile} | grep "Linux" | awk '{print $2}') * 512))
+
+${sudoBin} mount -v -t vfat -o rw,offset=${offset1},sizelimit=${size1} ${imgFile} ${part1}
+${sudoBin} mount -v -t ext4 -o rw,offset=${offset2},sizelimit=${size2} ${imgFile} ${part2}
+
+The NEW way:
+
+loopDev=$(${sudoBin} losetup -f)
+${sudoBin} losetup -v -f -P ${imgFile}
+
+${sudoBin} mount -v -t vfat -o rw ${loopDev}p${partBoot} ${part1}
+${sudoBin} mount -v -t ext4 -o rw ${loopDev}p${partRoot} ${part2}
+
+
+
+
+NOTE!!!! For raspi OS images, the filesystem space is shrunk to minimum to save storage space for raw image files!
+We need to first enlarge the image + partition + filesystem for the rootfs to ensure enough space for upcoming modifications + installs
+
+Normally the cmdline script at first boot would enlarge the system over the whole SD card
+
+But we dont want to fill the WHOLE SD card, only extend it a bit (like a gig or two).
+
+First, before mounting, append some zeroes to the image file end:
+
+enlarge image file by 2048 MBytes
+
+sudo dd if=/dev/zero bs=1M count=2048 >> original.img
+
+
+Then, mount the 1st part WITH limit READ/WRITE:
+
+sudo mount -v -o rw,offset=${offset1},sizelimit=${size1} -t vfat original.img /media/part1
+
+
+Now forecast the loop block device name that will be mounted:
+
+loopDev=$(sudo losetup -f)
+
+-> /dev/loopX
+
+After that, mount the rootfs/partition2 till the end of the image file (WITHOUT sizelimit!) READ/WRITE
+
+sudo mount -v -o rw,offset=${offset2} -t ext4 original.img /media/part2
+
+Finally, resize the filesystem in the rootfs partition to fill up new extended space:
+
+Using the pre-known loop device (resize2fs does NOT accept the filesystem path!!! we need the block device!)
+
+sudo resize2fs ${loopDev}
+
+All done! Filesystem should grow to the original + 2 GiB space
+
+
+
+
+
+
+
+Next, lets do the raspi headless configuration stuff, its mostly done by manipulating the boot partition:
+
+as ROOT / sudo su
+
+sudo touch /media/part1/ssh
+
+-> enable ssh server
+
+TODO!!! LAN config with more generic params!! -> from conf file in repo!!!
+OR! WLAN params from pipeline ENV (not suitable for all envs but could be used for this poc)
+
+#sudo bash -c "cat >> /media/part1/wpa_supplicant.conf" << EOF
+#EOF
+
+sudo cp wpa_supplicant.conf /media/part1/wpa_supplicant.conf
+
+
+Copy over the rest of the network config managed by cloud-init:
+
+sudo cp network-config /media/part1/network-config
+
+
+Copy also the initial user data config for raspi user:
+
+sudo cp user-data /media/part1/user-data
+
+
+First, copy over any needed assets into the tmp dir of the rootfs
+
+e.g. provision service, keys, etc
+
+# as ROOT/sudo:
+
+sudo mkdir -m 0700 /media/part2/root/bin
+
+# waitforit script for provision to wait for connection
+
+sudo curl -X GET -o /media/part2/root/bin/wait-for-it.sh "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh"
+
+# actual provisioning script
+
+sudo cp provision-image.sh /media/part2/root/bin/provision-image.sh
+
+
+Finally, after copying over all bash scripts, fix the perms
+
+# ensure x perm for scripts
+sudo chmod -R 0700 /media/part2/root/bin/
+
+# systemd service unit for the provisioning script (to launch at boot)
+
+#sudo bash -c "cat > /media/part2/lib/systemd/system/provisioning.service" << EOF
+#EOF
+
+sudo cp provisioning.service /media/part2/lib/systemd/system/provisioning.service
+
+Create version file into rootfs to identify image versions
+Create info file for description and details, maintainer info etc. for the image
+
+TODO: version etc from e.g. pipeline var!!
+
+imgVer='1.0.0'
+distroName="Ubuntu"
+distroVersion="18.04.6 LTS"
+maintName='Some Person'
+maintEmail='some.person@company.com'
+
+sudo bash -c "cat > /media/part2/image_version" << EOF
+${imgVer}
+EOF
+
+sudo bash -c "cat > /media/part2/image_info" << EOF
+Name: Iot Edge Base Image Based on ${distroName} ${distroVersion}
+Description: Patched generic self-provisioning image for IoT Edge devices.
+Maintainer: ${maintName} <${maintEmail}>
+Publish Date: $(date)
+EOF
+
+Netplan:
+
+In prod, we cant assume WLAN connection, so we need to set a default fallback netplan config for LAN.
+
+netplan uses *.yaml based on lexicographical order 00 -> ... -> 99
+
+Typically, some 00-.. default configs will be generated at first boot by ubuntu.
+
+Thus, we need to add something that will override everything on the near the higher end e.g. 90-..
+
+UPDATE 09.02.2022!!! Raspi does read custom netplan config from boot partition1!!!
+
+Ensure any other configs are overridden!!
+
+NOTE: This is done by network-config in boot partition!
+#sudo rm -f /media/part2/etc/netplan/*.yaml
+
+NOTE!!! YAML WHITESPACE SENSITIVE, USING SPACES IN SRC FILE!!!!
+
+#sudo bash -c "cat > /media/part2/etc/netplan/90-generic.yaml" << EOF
+#EOF
+
+#sudo cp 90-generic.yaml /media/part2/etc/netplan/90-generic.yaml
+
+
+Next, we need to chroot to the arm65 rootfs (from within amd64 as base os) to do the os image manipulation easily
+
+We could use qemu for emulating aarch64 arch and use that for terminal bin ?
+
+sudo apt install -y qemu-user-static
+
+sudo cp $(which qemu-aarch64-static) /media/part2/usr/bin/
+
+
+# Generic command for chroot to the target rootfs
+(sudo chroot /media/part2 qemu-aarch64-static /bin/bash)
+
+
+Run necessary configurations etc on target rootfs:
+
+#sudo apt install wait-for-it
+-> APT DOES NOT WORK IN CHROOT!!!
+
+
+# enable (install) the provisioning systemd service
+
+(note: ALREADY ON ROOT!)
+
+#systemctl daemon-reload
+=> DOES NOT WORK!!!
+
+sudo chroot /media/part2 qemu-aarch64-static /bin/bash -c "systemctl enable provisioning.service"
+
+=> Created symlink /etc/systemd/system/multi-user.target.wants/provisioning.service → /lib/systemd/system/provisioning.service.
+
+
+Provisioning SSH Keys (!!!):
+
+We might need an initial ssh access key for accesing the target using ssh after provisioning
+
+NOTE: Should we add some base image key for initial access + key after provisioning the machine?
+
+Or is adding key AFTER deployment (in provisioning only) enough (key fetched from provisioning cloud service)
+
+If we add keys to base image, also a new user is needed!
+
+Create user for base image level access
+
+
+keyFile="base_key"
+baseUser="base"
+
+# Create new user for custom permissions
+sudo chroot /media/part2 qemu-aarch64-static /bin/bash -c "useradd -m -G users,adm,dialout,audio,netdev,video,plugdev,cdrom,games,input,render,sudo -s /bin/bash ${baseUser}"
+
+TODO: read privkey value from secrets / keyvault ?
+
+Insert into authorized keys
+
+sshKey="ssh-rsa ..." # From ENV
+sudo bash -c "cat > /media/part2/home/base/.ssh/authorized_keys" << EOF
+$sshKey
+EOF
+
+
+FOR DEV/TESTING: create and copy key from local machine
+
+keyFile="base_key"
+baseUser="base"
+
+rm -f ${keyFile}*
+
+ssh-keygen -t ed25519 -a 512 -N '' -f ${keyFile}
+
+sudo mkdir -m 0700 /media/part2/home/${baseUser}/.ssh
+
+sudo cp ${keyFile}.pub /media/part2/home/${baseUser}/.ssh/authorized_keys
+
+
+Finally ensure correct perms for the homedir + key
+
+sudo chroot /media/part2 qemu-aarch64-static /bin/bash -c "chown -R ${baseUser}:${baseUser} /home/${baseUser}"
+
+sudo chroot /media/part2 qemu-aarch64-static /bin/bash -c "chmod 0644 /home/${baseUser}/.ssh/authorized_keys"
+
+# Set DEV password for the user for emergency access
+
+devPass="dev110222"
+
+# THIS WORKS!
+sudo chroot /media/part2 qemu-aarch64-static /bin/bash -c "echo '${baseUser}:${devPass}' | chpasswd"
+
+DOES NOT CHANGE PASSWORD CORRECTLY!!!
+#sudo chroot /media/part2 qemu-aarch64-static /bin/bash -c "usermod --password $(echo ${devPass} | openssl passwd -1 -stdin) ${baseUser}"
+
+Finally after everything done, unmount the patched partitions
+
+sudo umount /media/part1
+sudo umount /media/part2
+
+Retry logic in case umount fails, busy-error etc..?
+
+
+Rename the image file to clarify the result
+
+TODO: Rename with unique name+version combination!
+
+sudo mv original.img patched.img
+
+
+Once unmounted, re-pack the img
+
+sudo xz -z -k -T 4 -vvvv patched.img
+
+=> patched.img.xz
+
+Finally, upload the zipped patched image into the cloud service
+
+Rename the patched image with proper timestamp-version tag
+TODO: versioning!!! push version somewhere public? create a tag?
+
+sudo mv patched.img.xz ...
+
+Using azure blob storage, install az cli, set up env, 
+ensure storage acc + dir created
+
+Use Azure files share instead (SMB/nfs access)
+
+sudo apt update
+sudo apt install cifs-utils
+
+
+Upload image to blob directory
+
+az ...

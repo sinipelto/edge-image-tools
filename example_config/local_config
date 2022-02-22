@@ -1,0 +1,127 @@
+# shellcheck disable=SC2148
+
+# Development mode for developing / testing the script
+# Add dev password to base user
+# Should be 0 in production
+export DEV_MODE=1
+
+# Are we running the script locally for testing?
+# Or is the script run in the correct directory?
+# Should be 1 for this local testing the script, 0 in the pipeline execution
+export LOCAL_MODE=1
+
+# Supported OS: raspbian, raspios, ubuntu18, ubuntu20
+export IMAGE_OS='raspios'
+
+# For QEMU available archs: aarch64, arm, armeb, i386, x86_64
+export IMAGE_ARCH='arm'
+
+# General file name for image versioning file
+# Needed to transfer the version between the scripts and cloud <-> device
+export IMAGE_VER_FILE='image_version'
+
+# The version to be started from in case no previous version exists
+# NOTE: This version is incremented once before the final value is used
+# Current: if minor == 9 && rev == 99 => major + 1, minor=0, rev=0
+# Meaning initial version: 0.99.9 => 1.0.0
+export INITIAL_VERSION='0.9.99'
+
+# Thresholds to bump the greater version part
+# E.g. if rev == REV_MAX => minor += 1, rev = 0
+# if minor == MINOR_MAX => major += 1, minor = 0, rev = 0
+export MINOR_MAX=9
+export REV_MAX=99
+
+# Image params file. Contains essential info as exported variables about the image
+# Used by the scripts to share info and image rootfs for provisioning
+export IMAGE_PARAMS_FILE='image_params'
+
+# Patched image file name to sync create and publish image script vars
+export DEST_IMG_FILE='patched.img'
+
+# Set to 1 for fetching current version from configured Azure File Share
+export VERSION_FROM_SHARE=1
+
+# Read/List access SAS token for update image file share
+# Image names will be in format: OS_TYPE-OS_ARCH_YYYY-MM-DD_VERSION.img.xz
+# Retrieved from Azure Portal -> Storage Account -> Data storage -> File shares -> Open file share -> Properties -> URL
+# TODO token FROM secure location!!
+export IMAGE_SERVER_URL='https://<FILESHARE>.file.core.windows.net/<SHAREPATH>'
+# Retrieved from Azure Portal -> Storage Account -> Security + Networking -> Shared access signature
+# -> Select services=file resources=service,container,object permissions=read,list end-expiry=future-date proto=https-only key=any -> Generate -> Copy SAS Token field
+export SAS_TOKEN_URL_QUERY='<SAS_TOKEN_URL_QUERY_PARAMS>'
+
+# For development testing, the connection string for the Azure IoT Edge device
+# Retrieved from IoT Hub -> Device Management -> IoT Edge -> Open device -> Copy connection string
+# TODO removed once there is a reliable way to transfer the connection string to the device
+export DEV_EDGE_CONNECTION_STRING='HostName=<IOT_HUB_HOST_NAME>;DeviceId=<EDGE_DEVICE_ID>;SharedAccessKey=<EDGE_DEVICE_SYMMETRIC_KEY>'
+
+# Source image OS distribution information
+export DISTRO_NAME='Raspberry Pi OS Lite - Debian 11 (Bullseye) ARM32'
+export DISTRO_VERSION='Build: 2022-01-28'
+
+# export DISTRO_NAME='Ubuntu Server ARM64'
+# export DISTRO_VERSION='20.04.3 LTS'
+
+# Maintenance information
+export MAINT_NAME='Some Person'
+export MAINT_EMAIL='some.person@company.com'
+
+# Source URL to download the original official image from
+
+# RaspiOS Lite Arm64
+# 2022-02-21: Does NOT work with Azure IoT Edge AT ALL -> RaspiOS Arm64 not supported
+# export SRC_URL='https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2022-01-28/2022-01-28-raspios-bullseye-arm64-lite.zip'
+
+# RaspiOS Lite Arm32
+# 2022-02-21: Does not work directly with AzIoTEdge -> Cgroups error
+export SRC_URL='https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2022-01-28/2022-01-28-raspios-bullseye-armhf-lite.zip'
+
+# RaspiOS Arm32 WITH desktop env
+# export SRC_URL='https://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2022-01-28/2022-01-28-raspios-bullseye-armhf.zip'
+
+# Ubuntu Server 18.04.5 LTS ARM64 Preinstalled for Raspberry Pi 3
+# 2022-02-22: Does not work AT ALL -> DOES NOT BOOT (KERNEL PANIC)
+# export SRC_URL='https://cdimage.ubuntu.com/releases/18.04/release/ubuntu-18.04.5-preinstalled-server-arm64+raspi3.img.xz'
+
+# Ubuntu Server 20.04.3 LTS ARM64 Preinstalled Raspi 3/4
+# export SRC_URL='https://cdimage.ubuntu.com/releases/20.04/release/ubuntu-20.04.3-preinstalled-server-arm64+raspi.img.xz'
+
+# Expand the image root filesystem?
+# NOTE: RaspiOS has rootfs shrunk to 0% free space
+export GROW_IMAGE=1
+
+# How many megabytes the rootfs is expanded?
+# For raspios at least 1 gib recommended
+export GROW_SIZE_MBYTES=1024
+
+# User name for the created user
+export BASE_USER='base'
+
+# Dev password to be set on the created user
+# TODO FROM SECURE LOCATION!
+export BASE_USER_PASS='eXaMplePaSS1234'
+
+# The public SSH key to be delivered for the created user
+export SSH_PUBLIC_KEY='<SSH_KEY_TYPE> <SSH_PUBLIC_KEY> <OPTIONAL_SSH_KEY_COMMENT>'
+
+# Delete the original pre-made user?
+# Improves security
+export DEL_OG_USER=1
+
+# Configuration for generating SSH keys on the fly (only for local development runs)
+# Leave keyphrase empty for no key password (NOT RECOMMENDED!)
+export SSH_KEY_TYPE='ed25519'
+export SSH_KEY_ROUNDS=512
+export SSH_KEY_BITS=521
+export SSH_KEY_PHRASE=''
+export SSH_KEY_COMMENT='base-image-key'
+export SSH_KEY_FILE='base_key'
+
+# Remote mount point for Image SMB share
+export SMB_REMOTE_MOUNT_POINT='//<FILESHARE>.file.core.windows.net/<SHAREPATH>'
+
+# Image Storage SMB Share credentials
+# TODO FROM SECURE LOCATION!
+export SMB_USERNAME='<SMB_USERNAME>'
+export SMB_PASSWORD='<SMB_PASSWORD>'

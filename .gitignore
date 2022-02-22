@@ -1,0 +1,8 @@
+config/*
+!config/README.md
+
+image_files/*
+!image_files/README.md
+
+!.gitignore
+!README.md

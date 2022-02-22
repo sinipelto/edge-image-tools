@@ -1,0 +1,24 @@
+version: 2
+ethernets:
+  renderer: networkd
+  ethernet:
+    match:
+      name: e*
+    dhcp4: true
+    dhcp6: false
+    optional: true
+    set-name: eth0
+wifis:
+  renderer: networkd
+  wlan0:
+    dhcp4: true
+    dhcp6: false
+    optional: true
+    set-name: wlan0
+    access-points:
+      "<WLAN_SSID1>":
+        password: "<WLAN_PASSWORD>"
+        hidden: true
+      "<WLAN_SSID2>":
+        password: "<WLAN_PASSWORD>"
+        hidden: true

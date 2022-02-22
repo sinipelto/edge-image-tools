@@ -1,0 +1,90 @@
+Run Pi in QEMU 22.01.2022
+
+ubuntu server 20.04.3 LTS aarch64/arm64
+	supports raspi2/3/4
+	iot edge tier 1
+	etc benefits
+	higher compability with e.g. other machines running ubuntu amd64 (same distro)
+	thats why ubuntu and not raspian
+
+target device: raspberry pi 3b (and 4)
+	raspi 3/4 run on aarch64 (64-bit support)
+	qemu has machine for raspi3b
+	ready image
+	headless config needed
+	currently only pi3b+ owned (virtual machine used instead for more rapid development)
+
+official pi os imager tool
+	as its supported
+
+QEMU
+	latest win64 installer
+	for pi arm64 emulation
+	cannot use vbox or vmware because we need to support different arch (emulation vs virtualization)
+
+
+QEMU:
+
+qemu-edid.exe -help
+This is a test tool for the qemu edid generator.
+Typically you'll pipe the output into edid-decode
+to check if the generator works correctly.
+
+qemu-ga.exe [-m <method> -p <path>] [<options>]
+QEMU Guest Agent 6.2.0 (v6.2.0-11889-g5b72bf03f5-dirty)
+Copyright (c) 2003-2021 Fabrice Bellard and the QEMU Project developers
+
+qemu-img.exe -help
+qemu-img version 6.2.0 (v6.2.0-11889-g5b72bf03f5-dirty)
+Copyright (c) 2003-2021 Fabrice Bellard and the QEMU Project developers
+usage: qemu-img [standard options] command [command options]
+QEMU disk image utility
+
+    '-h', '--help'       display this help and exit
+    '-V', '--version'    output version information and exit
+    '-T', '--trace'      [[enable=]<pattern>][,events=<file>][,file=<file>]
+                         specify tracing options
+
+qemu-io.exe -help
+Usage: C:\Program Files\qemu\qemu-io.exe [OPTIONS]... [-c STRING]... [file]
+QEMU Disk exerciser
+
+PS \raspi> qemu-nbd.exe -help
+Usage: C:\Program Files\qemu\qemu-nbd.exe [OPTIONS] FILE
+  or:  C:\Program Files\qemu\qemu-nbd.exe -L [OPTIONS]
+QEMU Disk Network Block Device Utility
+
+PS \raspi> qemu-system-aarch64.exe -help
+QEMU emulator version 6.2.0 (v6.2.0-11889-g5b72bf03f5-dirty)
+Copyright (c) 2003-2021 Fabrice Bellard and the QEMU Project developers
+usage: C:\Program Files\qemu\qemu-system-aarch64.exe [options] [disk_image]
+
+'disk_image' is a raw hard disk image for IDE hard disk 0
+
+
+
+Vaiheet:
+
+install qemu windows
+add folder to PATH
+
+mkdir rasperry
+qemu bin with params launch original image
+
+qemu-system-aarch64.exe
+-machine type=raspi3b
+-cpu cortex-a57
+-smp cpus=4,maxcpus=4,sockets=1,cores=4,threads=1
+-boot order=c,menu=on,splash-time=10000
+-m size=1024
+-k fi
+-sd ubuntu.img
+
+-hda ubuntu.img
+
+qemu-system-aarch64.exe -machine type=raspi3b -cpu cortex-a57 -smp cpus=4,sockets=1,cores=4,threads=1,maxcpus=4 -boot order=c,menu=on,splash-time=10000 -m size=1024 -k fi -sd ubuntu.img
+
+
+
+
+
