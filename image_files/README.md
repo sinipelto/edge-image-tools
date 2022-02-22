@@ -14,7 +14,7 @@ wpa_supplicant.conf - For RaspiOS distros, not used by Ubuntu distros. Contains 
 Copy all files over from the `../example_image_files` directory into the `../image_files` directory.
 
 ```bash
-cp example_image_files/* image_files/
+cp ../example_image_files/* ../image_files/
 ```
 
 Modify the files to match your requirements.
