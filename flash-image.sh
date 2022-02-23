@@ -1,7 +1,13 @@
 #!/bin/bash
 set -e
 
-targetDev="${1}" && { [ -z "${targetDev}" ] && echo "Given targetDev is empty or not set." && echo -e "USAGE: ${0} <device>\nList of SCSI block devices: $(ls -l /dev/sd*)" && exit 1; }
+# For windows machines, this check is not valid so omit it
+kernel=$(uname -a)
+userId=$(id -u)
+[[ ${kernel,,} =~ "mingw" ]] || { (( userId != 0 )) && echo "Current user not root. This script must be run as root user or with sudo privileges." && exit 1; }
+
+devices=$(ls -l /dev/sd*)
+targetDev="${1}" && [ -z "${targetDev}" ] && echo "Given targetDev is empty or not set." && echo -e "USAGE: ${0} <device>\nList of SCSI block devices: ${devices}" && exit 1
 
 # [[ ${targetDev} == *"sda"* || ${targetDev} == *"sdb"* || ${targetDev} == *"sdc"* ]] && echo "ERROR: Protected device." && exit 1
 
@@ -17,12 +23,12 @@ source "${paramsFile}"
 
 workingDir="${HOME}/Downloads"
 
-imgServer=${IMAGE_SERVER_URL} && { [ -z "${imgServer}" ] && echo "Variable imgServer is empty or not set." && exit 1; }
-sasToken=${SAS_TOKEN_URL_QUERY} && { [ -z "${sasToken}" ] && echo "Variable sasToken is empty or not set." && exit 1; }
+imgServer=${IMAGE_SERVER_URL} && [ -z "${imgServer}" ] && echo "Variable imgServer is empty or not set." && exit 1
+sasToken=${SAS_TOKEN_URL_QUERY} && [ -z "${sasToken}" ] && echo "Variable sasToken is empty or not set." && exit 1
 
-imgVerFile=${IMAGE_VER_FILE} && { [ -z "${imgVerFile}" ] && echo "Variable imgVerFile is empty or not set." && exit 1; }
-imgOs=${IMAGE_OS} && { [ -z "${imgOs}" ] && echo "Variable imgOs is empty or not set." && exit 1; }
-imgArch=${IMAGE_ARCH} && { [ -z "${imgArch}" ] && echo "Variable imgArch is empty or not set." && exit 1; }
+imgVerFile=${IMAGE_VER_FILE} && [ -z "${imgVerFile}" ] && echo "Variable imgVerFile is empty or not set." && exit 1
+imgOs=${IMAGE_OS} && [ -z "${imgOs}" ] && echo "Variable imgOs is empty or not set." && exit 1
+imgArch=${IMAGE_ARCH} && [ -z "${imgArch}" ] && echo "Variable imgArch is empty or not set." && exit 1
 
 # Complete URL for fetching the latest image version
 imgVerFileUrl="${imgServer}/${imgOs}/${imgArch}/${imgVerFile}${sasToken}"
@@ -35,7 +41,6 @@ imgFilesListUrl="${imgServer}/${imgOs}/${imgArch}${sasToken}&comp=list&restype=d
 cd "${workingDir}"
 
 imgVer=$(curl -f -L "${imgVerFileUrl}")
-
 availableImages=$(curl -f -L "${imgFilesListUrl}")
 imgFileZip=$(echo "$availableImages" | tr '<>' '\n' | grep "${imgVer}")
 
