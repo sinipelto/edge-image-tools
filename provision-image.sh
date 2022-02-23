@@ -2,10 +2,7 @@
 set -e
 
 userId=$(id -u)
-if (( userId != 0 )); then
-	echo "Current user not root. This script must be run as root or with sudo privileges."
-	exit 1
-fi
+(( userId != 0 )) && echo "Current user not root. This script must be run as root user or with sudo privileges." && exit 1
 
 # Read image params variables from file
 # shellcheck source=/dev/null
