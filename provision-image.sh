@@ -84,7 +84,7 @@ config_sources() {
 	ensure_apt
 
 	pkgFileUbu='packages-microsoft-prod.deb'
-	pkgFileDeb='/etc/apt/sources.list.d/microsoft-prod.list'
+	pkgSrcList='/etc/apt/sources.list.d/microsoft-prod.list'
 	gpgKeyFile='/etc/apt/trusted.gpg.d/microsoft.gpg'
 
 	# Microsoft APT source Ubuntu 18.04 + gpg key
@@ -96,8 +96,10 @@ config_sources() {
 		curl -f -L "https://packages.microsoft.com/config/ubuntu/20.04/${pkgFileUbu}" > ${pkgFileUbu}
 		dpkg -i ${pkgFileUbu}
 		rm -fv ${pkgFileUbu}
+		# TODO: Temporary fix for correcting architectures for the MS Ubuntu package source list 
+		sed -i s'/\[arch=.*\]/\[arch=amd64,arm64,armhf\]/' ${pkgSrcList}
 	elif [[ ${os} == "rasp"* ]]; then
-		curl -f -L "https://packages.microsoft.com/config/debian/stretch/multiarch/prod.list" > ${pkgFileDeb}
+		curl -f -L "https://packages.microsoft.com/config/debian/stretch/multiarch/prod.list" > ${pkgSrcList}
 		curl -f -L "https://packages.microsoft.com/keys/microsoft.asc" | gpg --dearmor > ${gpgKeyFile}
 	fi
 
@@ -114,7 +116,7 @@ install_deps() {
 
 	# Must be installed first!
 	# Installs: moby-engine, moby-cli
-	apt-get install -y moby-engine
+	apt-get install -y --allow-remove-essential moby-engine
 
 	# Install once moby-engine is already installed
 	# NOTE: This installation removes package 'hostname' from raspi OS - installs hostname:armhf in place
@@ -172,6 +174,9 @@ provision() {
 update() {
 	echo "Updating system.."
 
+	# TODO remove
+	sed -i "s/export IMAGE_VERSION=.*/export IMAGE_VERSION=${remoteVersion}/" ${paramsFile}
+
 	# TODO: curl download image zip
 	#	extract zip
 	#	losetup mount image
@@ -179,7 +184,7 @@ update() {
 	#	change rootfs id to new
 	#	delete old
 
-	# TODO currently creates a bootloop
+	# TODO enable after tests ok
 	#doReboot=1
 	echo "System update done."
 }
