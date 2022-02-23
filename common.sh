@@ -13,7 +13,11 @@ waitAptitude() {
 		sleep ${unit}
 	done
 
-	if (( count >= countMax )); then echo "ERROR: Wait threshold reached. Could not access aptitude." && exit 1; fi
+	(( count >= countMax )) && echo "ERROR: Wait threshold reached. Could not access aptitude." && exit 1
+
+	# Note: last command retcode is 1 if the test succeeds, and would be returned from the function
+	# so we need to return 0 explicitly
+	return 0
 }
 
 installPackages() {
@@ -23,4 +27,6 @@ installPackages() {
 
 	# shellcheck disable=SC2068
 	apt-get install -y ${packages[@]}
+
+	return 0
 }
