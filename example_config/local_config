@@ -99,10 +99,12 @@ export GROW_SIZE_MBYTES=1024
 export BASE_USER='base'
 
 # Dev password to be set on the created user
+# Set EMPTY if the password should be DISABLED for the base user
 # TODO FROM SECURE LOCATION!
 export BASE_USER_PASS='eXaMplePaSS1234'
 
 # The public SSH key to be delivered for the created user
+# Set EMPTY if no specific public key wanted to be exported
 export SSH_PUBLIC_KEY='<SSH_KEY_TYPE> <SSH_PUBLIC_KEY> <OPTIONAL_SSH_KEY_COMMENT>'
 
 # Delete the original pre-made user?
@@ -111,6 +113,7 @@ export DEL_OG_USER=1
 
 # Do we create a new SSH key on the local machine for later use?
 # The created key will be authored for the base user created on the system image
+# Set to 0 to not create a new local ssh key to be appended on the base user
 export CREATE_LOCAL_SSH_KEY=1
 
 # Configuration for generating SSH keys on the fly (only for local development runs)
