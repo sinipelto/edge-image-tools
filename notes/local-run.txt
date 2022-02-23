@@ -1,0 +1,3 @@
+Full run over SSH (PowerShell):
+
+ssh azvm -C "rm -vrf repo && mkdir -vm 0755 repo" ; scp -r * azvm:repo/ ; ssh azvm -C "echo -e '\n\n' && cd repo && sudo chmod +x *.sh && sudo ./local-wrapper-image.sh"
