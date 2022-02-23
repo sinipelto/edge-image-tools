@@ -3,8 +3,9 @@ set -e
 
 # For windows machines, this check is not valid so omit it
 kernel=$(uname -a)
+kernel=${kernel,,}
 userId=$(id -u)
-[[ ${kernel,,} =~ "mingw" ]] || { (( userId != 0 )) && echo "Current user not root. This script must be run as root user or with sudo privileges." && exit 1; }
+[[ ${kernel} =~ "mingw" || ${kernel} =~ "cygwin" ]] || { (( userId != 0 )) && echo "Current user not root. This script must be run as root user or with sudo privileges." && exit 1; }
 
 devices=$(ls -l /dev/sd*)
 targetDev="${1}" && [ -z "${targetDev}" ] && echo "Given targetDev is empty or not set." && echo -e "USAGE: ${0} <device>\nList of SCSI block devices: ${devices}" && exit 1

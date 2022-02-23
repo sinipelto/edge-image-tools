@@ -7,29 +7,29 @@ source common.sh
 
 # Current user NOT root (build agent user)
 # Assuming either current user ROOT user or current user has SUDO
-curId=$(id -u)
-(( curId != 0 )) && echo "Current user not root. This script must be run as root user or with sudo privileges." && exit 1
+userId=$(id -u)
+(( userId != 0 )) && echo "Current user not root. This script must be run as root user or with sudo privileges." && exit 1
 
 dateStamp=$(date '+%Y-%m-%d')
 
-devMode=${DEV_MODE} && { [ -z "${devMode}" ] && echo "Variable devMode is empty or not set." && exit 1; }
-localMode=${LOCAL_MODE} && { [ -z "${localMode}" ] && echo "Variable localMode is empty or not set." && exit 1; }
+devMode=${DEV_MODE} && [ -z "${devMode}" ] && echo "Variable devMode is empty or not set." && exit 1
+localMode=${LOCAL_MODE} && [ -z "${localMode}" ] && echo "Variable localMode is empty or not set." && exit 1
 
-imgVerFile=${IMAGE_VER_FILE} && { [ -z "${imgVerFile}" ] && echo "Variable imgVerFile is empty or not set." && exit 1; }
-imgOs=${IMAGE_OS} && { [ -z "${imgOs}" ] && echo "Variable imgOs is empty or not set." && exit 1; }
-imgArch=${IMAGE_ARCH} && { [ -z "${imgArch}" ] && echo "Variable imgArch is empty or not set." && exit 1; }
+imgVerFile=${IMAGE_VER_FILE} && [ -z "${imgVerFile}" ] && echo "Variable imgVerFile is empty or not set." && exit 1
+imgOs=${IMAGE_OS} && [ -z "${imgOs}" ] && echo "Variable imgOs is empty or not set." && exit 1
+imgArch=${IMAGE_ARCH} && [ -z "${imgArch}" ] && echo "Variable imgArch is empty or not set." && exit 1
 
-imgFile=${DEST_IMG_FILE} && { [ -z "${imgFile}" ] && echo "Variable imgFile is empty or not set." && exit 1; }
+imgFile=${DEST_IMG_FILE} && [ -z "${imgFile}" ] && echo "Variable imgFile is empty or not set." && exit 1
 imgFileZip="${imgFile}.xz"
 
 mountPoint="/media/azure_img_share"
-remoteMountPoint=${SMB_REMOTE_MOUNT_POINT} && { [ -z "${remoteMountPoint}" ] && echo "Variable remoteMountPoint is empty or not set." && exit 1; }
+remoteMountPoint=${SMB_REMOTE_MOUNT_POINT} && [ -z "${remoteMountPoint}" ] && echo "Variable remoteMountPoint is empty or not set." && exit 1
 
 smbVer=3.0
 fileMode=0777
 
-username=${SMB_USERNAME} && { [ -z "${username}" ] && echo "Variable username is empty or not set." && exit 1; }
-password=${SMB_PASSWORD} && { [ -z "${password}" ] && echo "Variable password is empty or not set." && exit 1; }
+username=${SMB_USERNAME} && [ -z "${username}" ] && echo "Variable username is empty or not set." && exit 1
+password=${SMB_PASSWORD} && [ -z "${password}" ] && echo "Variable password is empty or not set." && exit 1
 
 aptPackages='coreutils bash util-linux cifs-utils'
 

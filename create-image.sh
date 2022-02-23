@@ -7,37 +7,37 @@ source common.sh
 
 # Current user NOT root (build agent user)
 # Assuming either current user ROOT user or current user has SUDO
-curId=$(id -u)
-(( curId != 0 )) && echo "Current user not root. This script must be run as root user or with sudo privileges." && exit 1
+userId=$(id -u)
+(( userId != 0 )) && echo "Current user not root. This script must be run as root user or with sudo privileges." && exit 1
 
-devMode=${DEV_MODE} && { [ -z "${devMode}" ] && echo "Variable devMode is empty or not set." && exit 1; }
-localMode=${LOCAL_MODE} && { [ -z "${localMode}" ] && echo "Variable localMode is empty or not set." && exit 1; }
+devMode=${DEV_MODE} && [ -z "${devMode}" ] && echo "Variable devMode is empty or not set." && exit 1
+localMode=${LOCAL_MODE} && [ -z "${localMode}" ] && echo "Variable localMode is empty or not set." && exit 1
 
-imgOs=${IMAGE_OS} && { [ -z "${imgOs}" ] && echo "Variable imgOs is empty or not set." && exit 1; }
-imgArch=${IMAGE_ARCH} && { [ -z "${imgArch}" ] && echo "Variable imgArch is empty or not set." && exit 1; }
+imgOs=${IMAGE_OS} && [ -z "${imgOs}" ] && echo "Variable imgOs is empty or not set." && exit 1
+imgArch=${IMAGE_ARCH} && [ -z "${imgArch}" ] && echo "Variable imgArch is empty or not set." && exit 1
 
-imgVerFile=${IMAGE_VER_FILE} && { [ -z "${imgVerFile}" ] && echo "Variable imgVerFile is empty or not set." && exit 1; }
-imgParamsFile=${IMAGE_PARAMS_FILE} && { [ -z "${imgParamsFile}" ] && echo "Variable imgParamsFile is empty or not set." && exit 1; }
+imgVerFile=${IMAGE_VER_FILE} && [ -z "${imgVerFile}" ] && echo "Variable imgVerFile is empty or not set." && exit 1
+imgParamsFile=${IMAGE_PARAMS_FILE} && [ -z "${imgParamsFile}" ] && echo "Variable imgParamsFile is empty or not set." && exit 1
 
-versionFromShare=${VERSION_FROM_SHARE} && { [ -z "${versionFromShare}" ] && echo "Variable versionFromShare is empty or not set." && exit 1; }
+versionFromShare=${VERSION_FROM_SHARE} && [ -z "${versionFromShare}" ] && echo "Variable versionFromShare is empty or not set." && exit 1
 
-imgServer=${IMAGE_SERVER_URL} && { [ -z "${imgServer}" ] && echo "Variable imgServer is empty or not set." && exit 1; }
-sasToken=${SAS_TOKEN_URL_QUERY} && { [ -z "${sasToken}" ] && echo "Variable sasToken is empty or not set." && exit 1; }
+imgServer=${IMAGE_SERVER_URL} && [ -z "${imgServer}" ] && echo "Variable imgServer is empty or not set." && exit 1
+sasToken=${SAS_TOKEN_URL_QUERY} && [ -z "${sasToken}" ] && echo "Variable sasToken is empty or not set." && exit 1
 
 # Complete URL for fetching the latest image version
-imgVerFileUrl="${imgServer}/${imgOs}/${imgArch}/${imgVerFile}${sasToken}"
+imgVerFileUrl=${imgServer}/${imgOs}/${imgArch}/${imgVerFile}${sasToken}
 
-initVer=${INITIAL_VERSION} && { [ -z "${initVer}" ] && echo "Variable initVer is empty or not set." && exit 1; }
-minorMax=${MINOR_MAX} && { [ -z "${minorMax}" ] && echo "Variable minorMax is empty or not set." && exit 1; }
-revMax=${REV_MAX} && { [ -z "${revMax}" ] && echo "Variable revMax is empty or not set." && exit 1; }
+initVer=${INITIAL_VERSION} && [ -z "${initVer}" ] && echo "Variable initVer is empty or not set." && exit 1
+minorMax=${MINOR_MAX} && [ -z "${minorMax}" ] && echo "Variable minorMax is empty or not set." && exit 1
+revMax=${REV_MAX} && [ -z "${revMax}" ] && echo "Variable revMax is empty or not set." && exit 1
 
-distroName=${DISTRO_NAME} && { [ -z "${distroName}" ] && echo "Variable distroName is empty or not set." && exit 1; }
-distroVer=${DISTRO_VERSION} && { [ -z "${distroVer}" ] && echo "Variable distroVer is empty or not set." && exit 1; }
+distroName=${DISTRO_NAME} && [ -z "${distroName}" ] && echo "Variable distroName is empty or not set." && exit 1
+distroVer=${DISTRO_VERSION} && [ -z "${distroVer}" ] && echo "Variable distroVer is empty or not set." && exit 1
 
-maintName=${MAINT_NAME} && { [ -z "${maintName}" ] && echo "Variable maintName is empty or not set." && exit 1; }
-maintEmail=${MAINT_EMAIL} && { [ -z "${maintEmail}" ] && echo "Variable maintEmail is empty or not set." && exit 1; }
+maintName=${MAINT_NAME} && [ -z "${maintName}" ] && echo "Variable maintName is empty or not set." && exit 1
+maintEmail=${MAINT_EMAIL} && [ -z "${maintEmail}" ] && echo "Variable maintEmail is empty or not set." && exit 1
 
-srcUrl=${SRC_URL} && { [ -z "${srcUrl}" ] && echo "Variable srcUrl is empty or not set." && exit 1; }
+srcUrl=${SRC_URL} && [ -z "${srcUrl}" ] && echo "Variable srcUrl is empty or not set." && exit 1
 
 srcFileExt=${srcUrl##*.}
 
@@ -47,11 +47,11 @@ imgFileBak="${imgFile}.bak"
 [[ "${srcFileExt}" == "xz" ]] && imgFileZip="${imgFile}.xz"
 [[ "${srcFileExt}" == "zip" ]] && imgFileZip="${imgFile}.zip"
 
-newImgFile=${DEST_IMG_FILE} && { [ -z "${newImgFile}" ] && echo "Variable newImgFile is empty or not set." && exit 1; }
+newImgFile=${DEST_IMG_FILE} && [ -z "${newImgFile}" ] && echo "Variable newImgFile is empty or not set." && exit 1
 newImgFileZip="${newImgFile}.xz"
 
-growImage=${GROW_IMAGE} && { [ -z "${growImage}" ] && echo "Variable growImage is empty or not set." && exit 1; }
-growSizeMbytes=${GROW_SIZE_MBYTES} && { [ -z "${growSizeMbytes}" ] && echo "Variable growSizeMbytes is empty or not set." && exit 1; }
+growImage=${GROW_IMAGE} && [ -z "${growImage}" ] && echo "Variable growImage is empty or not set." && exit 1
+growSizeMbytes=${GROW_SIZE_MBYTES} && [ -z "${growSizeMbytes}" ] && echo "Variable growSizeMbytes is empty or not set." && exit 1
 
 zeroDev='/dev/zero'
 part1='/media/part1'
@@ -89,13 +89,13 @@ netplanFile="${assetPath}/95-network.yaml"
 cmdlineFile='cmdline.txt'
 cmdlineFile="${part1}/${cmdlineFile}"
 
-delOgUser=${DEL_OG_USER} && { [ -z "${delOgUser}" ] && echo "Variable delOgUser is empty or not set." && exit 1; }
+delOgUser=${DEL_OG_USER} && [ -z "${delOgUser}" ] && echo "Variable delOgUser is empty or not set." && exit 1
 
 ogUserRaspios='pi'
 ogUserUbuntu='ubuntu'
 
-baseUser=${BASE_USER} && { [ -z "${baseUser}" ] && echo "Variable baseUser is empty or not set." && exit 1; }
-basePass=${BASE_USER_PASS} && { [ -z "${basePass}" ] && echo "Variable basePass is empty or not set." && exit 1; }
+baseUser=${BASE_USER} && [ -z "${baseUser}" ] && echo "Variable baseUser is empty or not set." && exit 1
+basePass=${BASE_USER_PASS} && [ -z "${basePass}" ] && echo "Variable basePass is empty or not set." && exit 1
 
 baseHome="/home/${baseUser}"
 
@@ -103,14 +103,14 @@ baseHome="/home/${baseUser}"
 [[ "${imgOs}" == "rasp"* ]] && baseGroups="adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,render,netdev,gpio,i2c,spi"
 [[ "${imgOs}" == "ubuntu"* ]] && baseGroups="users,adm,dialout,audio,netdev,video,plugdev,cdrom,games,input,sudo"
 
-sshPubKey=${SSH_PUBLIC_KEY} && { [ -z "${sshPubKey}" ] && echo "WARNING: Variable sshPubKey is empty or not set."; }
+sshPubKey=${SSH_PUBLIC_KEY} && [ -z "${sshPubKey}" ] && echo "WARNING: Variable sshPubKey is empty or not set." && exit 1
 
-keyType=${SSH_KEY_TYPE} && { [ -z "${keyType}" ] && echo "Variable keyType is empty or not set." && exit 1; }
-keyRounds=${SSH_KEY_ROUNDS} && { [ -z "${keyRounds}" ] && echo "Variable keyRounds is empty or not set." && exit 1; }
-keyBits=${SSH_KEY_BITS} && { [ -z "${keyBits}" ] && echo "Variable keyBits is empty or not set." && exit 1; }
+keyType=${SSH_KEY_TYPE} && [ -z "${keyType}" ] && echo "Variable keyType is empty or not set." && exit 1
+keyRounds=${SSH_KEY_ROUNDS} && [ -z "${keyRounds}" ] && echo "Variable keyRounds is empty or not set." && exit 1
+keyBits=${SSH_KEY_BITS} && [ -z "${keyBits}" ] && echo "Variable keyBits is empty or not set." && exit 1
 keyPhrase=${SSH_KEY_PHRASE}&& { [ -z "${keyPhrase}" ] && echo "WARNING: Variable keyPhrase is empty or not set."; }
-keyComment=${SSH_KEY_COMMENT} && { [ -z "${keyComment}" ] && echo "Variable keyComment is empty or not set." && exit 1; }
-keyFile=${SSH_KEY_FILE} && { [ -z "${keyFile}" ] && echo "Variable keyFile is empty or not set." && exit 1; }
+keyComment=${SSH_KEY_COMMENT} && [ -z "${keyComment}" ] && echo "Variable keyComment is empty or not set." && exit 1
+keyFile=${SSH_KEY_FILE} && [ -z "${keyFile}" ] && echo "Variable keyFile is empty or not set." && exit 1
 keyFilePub="${keyFile}.pub"
 
 sudoersFile="${part2}/etc/sudoers.d/010_${baseUser}"
