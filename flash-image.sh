@@ -5,6 +5,10 @@ targetDev="${1}" && { [ -z "${targetDev}" ] && echo "Given targetDev is empty or
 
 # [[ ${targetDev} == *"sda"* || ${targetDev} == *"sdb"* || ${targetDev} == *"sdc"* ]] && echo "ERROR: Protected device." && exit 1
 
+read -rp "DATA LOSS WARNING! Selected device: ${targetDev}. Continue? (y/n) " ans
+
+[[ ${ans} != "y" ]] && { echo "Answer was not YES. Exiting."; exit 0; }
+
 paramsFile='config/local_config'
 
 # Read and parse common variables
