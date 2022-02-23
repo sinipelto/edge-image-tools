@@ -17,7 +17,7 @@ wifis:
     access-points:
       "<WLAN_SSID1>":
         password: "<WLAN_PASSWORD>"
-        hidden: true
+        hidden: true # Remove this line if network is not hidden!
       "<WLAN_SSID2>":
         password: "<WLAN_PASSWORD>"
-        hidden: true
+        hidden: true # Remove this line if network is not hidden!
