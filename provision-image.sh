@@ -192,7 +192,10 @@ update() {
 check_updates() {
 	echo "Checking for image updates.."
 
-	remoteVersion=$(curl -f -L "${imgVersionUrl}")
+	remoteVersion=$(queryImageVersion "${imgVersionUrl}")
+
+	# If failed to retrieve remote version, move on to allow later operations
+	[ -z "${remoteVersion}" ] && echo "WARNING: Could not retrieve version from server. Skipping update." && return 0
 
 	echo "Current image version: ${version} - Remote image version: ${remoteVersion}"
 
