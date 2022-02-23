@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Import common functions
+# shellcheck source=/dev/null
+source common.sh
+
 # Current user NOT root (build agent user)
 # Assuming either current user ROOT user or current user has SUDO
 curId=$(id -u)
@@ -49,9 +53,8 @@ remoteNewImgZip="${remoteImgPath}/${newImgFileZip}"
 
 [ ! -f "${imgFileZip}" ] && echo "ERROR: Image Archive does not exist." && exit 1
 
-apt-get update
-# shellcheck disable=SC2068
-apt-get install -y ${aptPackages[@]}
+waitAptitude
+installPackages "${aptPackages}"
 
 # No extra verbosity when echoing credentials!
 echo "username=${username}" > "${credFile}"
@@ -62,7 +65,7 @@ chmod -v 0400 "${credFile}"
 umount -vlf ${mountPoint} || true
 
 rm -rfv ${mountPoint}
-mkdir -v ${mountPoint}
+mkdir -vp ${mountPoint}
 
 mount -v -t cifs "${remoteMountPoint}" ${mountPoint} -o vers=${smbVer},credentials="${credFile}",dir_mode=${fileMode},file_mode=${fileMode},serverino
 
