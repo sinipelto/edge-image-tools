@@ -4,9 +4,21 @@ set -e
 userId=$(id -u)
 (( userId != 0 )) && echo "Current user not root. This script must be run as root user or with sudo privileges." && exit 1
 
+paramsFile='/image_params'
+
+waitBin='/root/bin/wait-for-it.sh'
+commonBin='/root/bin/common.sh'
+
+sleepBin='/bin/sleep'
+shutdownBin='/sbin/shutdown'
+dateBin='/bin/date'
+
+# shellcheck source=/dev/null
+source ${commonBin}
+
 # Read image params variables from file
 # shellcheck source=/dev/null
-source /image_params
+source ${paramsFile}
 
 version=${IMAGE_VERSION}
 os=${IMAGE_OS}
@@ -19,11 +31,6 @@ imgServer=${IMAGE_SERVER_URL}
 sasToken=${SAS_TOKEN_URL_QUERY}
 
 imgVersionUrl="${imgServer}/${os}/${arch}/${versionFile}${sasToken}"
-
-waitBin='/root/bin/wait-for-it.sh'
-sleepBin='/bin/sleep'
-shutdownBin='/sbin/shutdown'
-dateBin='/bin/date'
 
 dateTime=$(${dateBin})
 #isoDate=$(${dateBin} '+%Y-%m-%dT%H:%M:%S')
@@ -101,6 +108,7 @@ install_deps() {
 	echo "Install dependencies.."
 
 	ensure_apt
+	waitAptitude
 
 	apt-get update
 
@@ -209,7 +217,7 @@ check_updates() {
 setup_persistence() {
 	echo "Starting to setup persistence partition.."
 
-	# TODO: create new partition to pstart=end-4M pend=end-4
+	# TODO: create new partition to pstart=end-4M pend=end-1
 	#	format partition ext4
 	#	add mount entry to mount partition at boot
 
@@ -219,6 +227,11 @@ setup_persistence() {
 
 	echo "Persistence partition setup done."
 }
+
+
+#################
+##### START #####
+#################
 
 isUpdate=0
 doReboot=0

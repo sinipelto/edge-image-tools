@@ -2,8 +2,9 @@
 set -e
 
 # Import common functions
+commonScript='common.sh'
 # shellcheck source=/dev/null
-source common.sh
+source ${commonScript}
 
 # Current user NOT root (build agent user)
 # Assuming either current user ROOT user or current user has SUDO
@@ -49,7 +50,9 @@ remoteVerFile="${remoteImgPath}/${imgVerFile}"
 remoteNewImgZip="${remoteImgPath}/${newImgFileZip}"
 
 
+#################
 ##### START #####
+#################
 
 [ ! -f "${imgFileZip}" ] && echo "ERROR: Image Archive does not exist." && exit 1
 

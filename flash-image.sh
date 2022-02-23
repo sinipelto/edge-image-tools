@@ -37,7 +37,9 @@ imgVerFileUrl="${imgServer}/${imgOs}/${imgArch}/${imgVerFile}${sasToken}"
 imgFilesListUrl="${imgServer}/${imgOs}/${imgArch}${sasToken}&comp=list&restype=directory"
 
 
+#################
 ##### START #####
+#################
 
 cd "${workingDir}"
 
@@ -47,7 +49,6 @@ imgFileZip=$(echo "$availableImages" | tr '<>' '\n' | grep "${imgVer}")
 
 [ -z "${imgFileZip}" ] && echo "ERROR: Could not find the correct image file with following parameters: os: ${imgOs} arch: ${imgArch} ver: ${imgVer}. Abort." && exit 1
 
-#fileExt=${imgFileZip##*.}
 fileNoExt=${imgFileZip%.*}
 
 imgFile="${fileNoExt}"

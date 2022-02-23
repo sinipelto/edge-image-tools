@@ -17,8 +17,10 @@ bashBin='/bin/bash'
 createScript="${PWD}/create-image.sh"
 publishScript="${PWD}/publish-image.sh"
 
-##### START #####
 
+#################
+##### START #####
+#################
 
 chmod -v +x "${createScript}"
 chmod -v +x "${publishScript}"

@@ -2,8 +2,9 @@
 set -e
 
 # Import common functions
+commonScript="common.sh"
 # shellcheck source=/dev/null
-source common.sh
+source ${commonScript}
 
 # Current user NOT root (build agent user)
 # Assuming either current user ROOT user or current user has SUDO
@@ -127,7 +128,9 @@ aptPackages='coreutils bash grep util-linux curl fdisk zip unzip xz-utils binfmt
 cpus=$(< /proc/cpuinfo grep -c processor)
 
 
+#################
 ##### START #####
+#################
 
 [[ ${1} == 'test' ]] && echo "Script self-test OK" && exit 0
 
@@ -267,6 +270,7 @@ cp -v ${userFile} ${part1}/
 sed -i "${resizeLine}" ${cmdlineFile}
 
 [ ! -d ${rootBin} ] && mkdir -vm 0700 ${rootBin}
+cp -v ${commonScript} ${rootBin}/
 cp -v ${waitforitScript} ${rootBin}/
 cp -v ${provisionScript} ${rootBin}/
 chmod -vR 0700 ${rootBin}
