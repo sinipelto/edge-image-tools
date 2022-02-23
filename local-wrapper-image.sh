@@ -18,8 +18,8 @@ bashBin='/bin/bash'
 createScript="${PWD}/create-image.sh"
 publishScript="${PWD}/publish-image.sh"
 
-chmod +x "${createScript}"
-chmod +x "${publishScript}"
+chmod -v +x "${createScript}"
+chmod -v +x "${publishScript}"
 
 # Test all params are correctly set
 ${bashBin} "${createScript}" 'test'
