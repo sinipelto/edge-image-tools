@@ -12,10 +12,6 @@ targetDev="${1}" && [ -z "${targetDev}" ] && echo "Given targetDev is empty or n
 
 # [[ ${targetDev} == *"sda"* || ${targetDev} == *"sdb"* || ${targetDev} == *"sdc"* ]] && echo "ERROR: Protected device." && exit 1
 
-read -rp "DATA LOSS WARNING! Selected device: ${targetDev}. Continue? (y/n) " ans
-
-[[ ${ans} != "y" ]] && { echo "Answer was not YES. Exiting."; exit 0; }
-
 paramsFile='config/local_config'
 
 # Read and parse common variables
@@ -43,6 +39,12 @@ imgFilesListUrl="${imgServer}/${imgOs}/${imgArch}${sasToken}&comp=list&restype=d
 
 cd "${workingDir}"
 
+[[ ! -b ${targetDev} ]] && echo "Device ${targetDev} not found!" && exit 1
+
+read -rp "DATA LOSS WARNING! Selected device: ${targetDev}. Continue? (y/n) " ans
+
+[[ ${ans} != "y" ]] && { echo "Answer was not YES. Exiting."; exit 0; }
+
 imgVer=$(curl -f -L "${imgVerFileUrl}")
 availableImages=$(curl -f -L "${imgFilesListUrl}")
 imgFileZip=$(echo "$availableImages" | tr '<>' '\n' | grep "${imgVer}")
@@ -60,6 +62,13 @@ imgFileUrl="${imgServer}/${imgOs}/${imgArch}/${imgFileZip}${sasToken}"
 
 echo "Writing image.."
 
-dd status=progress if="${imgFile}" of="${targetDev}" bs=64k
+count=0
+countMax=30
+while (( count < countMax )) && ! dd status=progress if="${imgFile}" of="${targetDev}" bs=64k; do
+	echo ""
+	(( count += 1 ))
+	sleep 1
+done
+(( count >= countMax )) && echo "ERROR: Failed to write image to device." && exit 1
 
 echo "Image written to target device."
