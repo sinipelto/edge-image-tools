@@ -11,10 +11,17 @@ fi
 # shellcheck source=/dev/null
 source /image_params
 
+version=${IMAGE_VERSION}
 os=${IMAGE_OS}
 arch=${IMAGE_ARCH}
-version=${IMAGE_VERSION}
 versionFile=${IMAGE_VER_FILE}
+
+# Read/List SAS token for update image file share
+# Images will be in format: YYYY-MM-DD_VERSION.img.xz
+imgServer=${IMAGE_SERVER_URL}
+sasToken=${SAS_TOKEN_URL_QUERY}
+
+imgVersionUrl="${imgServer}/${os}/${arch}/${versionFile}${sasToken}"
 
 waitBin='/root/bin/wait-for-it.sh'
 sleepBin='/bin/sleep'
@@ -39,13 +46,6 @@ provText="Pre-Built IoT Edge Image\nImage Version: ${version}\nDevice Provision 
 #persistenceText="Persistence partition created with image version: ${version}\nPersistence partition Creation Date: ${dateTime}"
 
 devConnStr=${DEV_EDGE_CONNECTION_STRING}
-
-# Read/List SAS token for update image file share
-# Images will be in format: YYYY-MM-DD_VERSION.img.xz
-imgServer=${IMAGE_SERVER_URL}
-sasToken=${SAS_TOKEN_URL_QUERY}
-
-imgVersionUrl="${imgServer}/${os}/${arch}/${versionFile}${sasToken}"
 
 ensure_apt() {
 	echo "Ensure connection to APT required services available.."
