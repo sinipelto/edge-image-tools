@@ -1,3 +1,19 @@
-Full run over SSH (PowerShell):
+Expect: PWD == repoDir
+
+Full run create & publish image over SSH on Linux target (PowerShell):
 
 ssh azvm -C "rm -vrf repo && mkdir -vm 0755 repo" ; scp -r * azvm:repo/ ; ssh azvm -C "echo -e '\n\n' && cd repo && sudo chmod +x *.sh && sudo ./local-wrapper-image.sh"
+
+
+
+
+Full run + flash the image on /dev/sdd once done (BASH):
+
+ssh azvm -C "rm -vrf repo && mkdir -vm 0755 repo" && scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n' && cd repo && sudo chmod +x *.sh && sudo ./local-wrapper-image.sh" && echo -e '\n\n' && sleep 10 && echo 'y' | ./flash-image.sh /dev/sdd
+
+
+
+
+Flash /dev/sdd only and prompt (BASH):
+
+./flash-image.sh /dev/sdd
