@@ -14,7 +14,6 @@ wifis:
     dhcp4: true
     dhcp6: false
     optional: true
-    set-name: wlan0
     access-points:
       "<WLAN_SSID1>":
         password: "<WLAN_PASSWORD>"
