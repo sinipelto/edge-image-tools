@@ -45,10 +45,10 @@ export VERSION_FROM_SHARE=1
 # Read/List access SAS token for update image file share
 # Image names will be in format: OS_TYPE-OS_ARCH_YYYY-MM-DD_VERSION.img.xz
 # Retrieved from Azure Portal -> Storage Account -> Data storage -> File shares -> Open file share -> Properties -> URL
-# TODO token FROM secure location!!
 export IMAGE_SERVER_URL='https://<FILESHARE>.file.core.windows.net/<SHAREPATH>'
 # Retrieved from Azure Portal -> Storage Account -> Security + Networking -> Shared access signature
 # -> Select services=file resources=service,container,object permissions=read,list end-expiry=future-date proto=https-only key=any -> Generate -> Copy SAS Token field
+# TODO: token FROM secure location!!
 export SAS_TOKEN_URL_QUERY='<SAS_TOKEN_URL_QUERY_PARAMS>'
 
 # For development testing, the connection string for the Azure IoT Edge device
@@ -71,21 +71,21 @@ export MAINT_EMAIL='some.person@company.com'
 
 # RaspiOS Lite Arm64
 # 2022-02-21: Does NOT work with Azure IoT Edge AT ALL -> RaspiOS Arm64 not supported
-# export SRC_URL='https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2022-01-28/2022-01-28-raspios-bullseye-arm64-lite.zip'
+# export IMAGE_SRC_URL='https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2022-01-28/2022-01-28-raspios-bullseye-arm64-lite.zip'
 
 # RaspiOS Lite Arm32
 # 2022-02-21: Does not work directly with AzIoTEdge -> Cgroups error
-export SRC_URL='https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2022-01-28/2022-01-28-raspios-bullseye-armhf-lite.zip'
+export IMAGE_SRC_URL='https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2022-01-28/2022-01-28-raspios-bullseye-armhf-lite.zip'
 
 # RaspiOS Arm32 WITH desktop env
-# export SRC_URL='https://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2022-01-28/2022-01-28-raspios-bullseye-armhf.zip'
+# export IMAGE_SRC_URL='https://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2022-01-28/2022-01-28-raspios-bullseye-armhf.zip'
 
 # Ubuntu Server 18.04.5 LTS ARM64 Preinstalled for Raspberry Pi 3
 # 2022-02-22: Does not work AT ALL -> DOES NOT BOOT (KERNEL PANIC)
-# export SRC_URL='https://cdimage.ubuntu.com/releases/18.04/release/ubuntu-18.04.5-preinstalled-server-arm64+raspi3.img.xz'
+# export IMAGE_SRC_URL='https://cdimage.ubuntu.com/releases/18.04/release/ubuntu-18.04.5-preinstalled-server-arm64+raspi3.img.xz'
 
 # Ubuntu Server 20.04.3 LTS ARM64 Preinstalled Raspi 3/4
-# export SRC_URL='https://cdimage.ubuntu.com/releases/20.04/release/ubuntu-20.04.3-preinstalled-server-arm64+raspi.img.xz'
+# export IMAGE_SRC_URL='https://cdimage.ubuntu.com/releases/20.04/release/ubuntu-20.04.3-preinstalled-server-arm64+raspi.img.xz'
 
 # Expand the image root filesystem?
 # NOTE: RaspiOS has rootfs shrunk to 0% free space
@@ -109,6 +109,10 @@ export SSH_PUBLIC_KEY='<SSH_KEY_TYPE> <SSH_PUBLIC_KEY> <OPTIONAL_SSH_KEY_COMMENT
 # Improves security
 export DEL_OG_USER=1
 
+# Do we create a new SSH key on the local machine for later use?
+# The created key will be authored for the base user created on the system image
+export CREATE_LOCAL_SSH_KEY=1
+
 # Configuration for generating SSH keys on the fly (only for local development runs)
 # Leave keyphrase empty for no key password (NOT RECOMMENDED!)
 export SSH_KEY_TYPE='ed25519'
@@ -119,9 +123,11 @@ export SSH_KEY_COMMENT='base-image-key'
 export SSH_KEY_FILE='base_key'
 
 # Remote mount point for Image SMB share
+# Should point on a valid SMB share location, supporting SMB 3.0
 export SMB_REMOTE_MOUNT_POINT='//<FILESHARE>.file.core.windows.net/<SHAREPATH>'
 
-# Image Storage SMB Share credentials
+# Image Storage SMB Share credentials to access the share
+# Must have read/write permissions on the share root!
 # TODO FROM SECURE LOCATION!
 export SMB_USERNAME='<SMB_USERNAME>'
 export SMB_PASSWORD='<SMB_PASSWORD>'

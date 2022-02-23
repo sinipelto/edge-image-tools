@@ -11,34 +11,34 @@ source ${commonScript}
 userId=$(id -u)
 (( userId != 0 )) && echo "Current user not root. This script must be run as root user or with sudo privileges." && exit 1
 
-devMode=${DEV_MODE} && [ -z "${devMode}" ] && echo "Variable devMode is empty or not set." && exit 1
-localMode=${LOCAL_MODE} && [ -z "${localMode}" ] && echo "Variable localMode is empty or not set." && exit 1
+devMode=${DEV_MODE} && [ -z "${devMode}" ] && echo "Variable DEV_MODE is empty or not set." && exit 1
+localMode=${LOCAL_MODE} && [ -z "${localMode}" ] && echo "Variable LOCAL_MODE is empty or not set." && exit 1
 
-imgOs=${IMAGE_OS} && [ -z "${imgOs}" ] && echo "Variable imgOs is empty or not set." && exit 1
-imgArch=${IMAGE_ARCH} && [ -z "${imgArch}" ] && echo "Variable imgArch is empty or not set." && exit 1
+imgOs=${IMAGE_OS} && [ -z "${imgOs}" ] && echo "Variable IMAGE_OS is empty or not set." && exit 1
+imgArch=${IMAGE_ARCH} && [ -z "${imgArch}" ] && echo "Variable IMAGE_ARCH is empty or not set." && exit 1
 
-imgVerFile=${IMAGE_VER_FILE} && [ -z "${imgVerFile}" ] && echo "Variable imgVerFile is empty or not set." && exit 1
-imgParamsFile=${IMAGE_PARAMS_FILE} && [ -z "${imgParamsFile}" ] && echo "Variable imgParamsFile is empty or not set." && exit 1
+imgVerFile=${IMAGE_VER_FILE} && [ -z "${imgVerFile}" ] && echo "Variable IMAGE_VER_FILE is empty or not set." && exit 1
+imgParamsFile=${IMAGE_PARAMS_FILE} && [ -z "${imgParamsFile}" ] && echo "Variable IMAGE_PARAMS_FILE is empty or not set." && exit 1
 
-versionFromShare=${VERSION_FROM_SHARE} && [ -z "${versionFromShare}" ] && echo "Variable versionFromShare is empty or not set." && exit 1
+versionFromShare=${VERSION_FROM_SHARE} && [ -z "${versionFromShare}" ] && echo "Variable VERSION_FROM_SHARE is empty or not set." && exit 1
 
-imgServer=${IMAGE_SERVER_URL} && [ -z "${imgServer}" ] && echo "Variable imgServer is empty or not set." && exit 1
-sasToken=${SAS_TOKEN_URL_QUERY} && [ -z "${sasToken}" ] && echo "Variable sasToken is empty or not set." && exit 1
+imgServer=${IMAGE_SERVER_URL} && [ -z "${imgServer}" ] && echo "Variable IMAGE_SERVER_URL is empty or not set." && exit 1
+sasToken=${SAS_TOKEN_URL_QUERY} && [ -z "${sasToken}" ] && echo "Variable SAS_TOKEN_URL_QUERY is empty or not set." && exit 1
 
 # Complete URL for fetching the latest image version
 imgVerFileUrl=${imgServer}/${imgOs}/${imgArch}/${imgVerFile}${sasToken}
 
-initVer=${INITIAL_VERSION} && [ -z "${initVer}" ] && echo "Variable initVer is empty or not set." && exit 1
-minorMax=${MINOR_MAX} && [ -z "${minorMax}" ] && echo "Variable minorMax is empty or not set." && exit 1
-revMax=${REV_MAX} && [ -z "${revMax}" ] && echo "Variable revMax is empty or not set." && exit 1
+initVer=${INITIAL_VERSION} && [ -z "${initVer}" ] && echo "Variable INITIAL_VERSION is empty or not set." && exit 1
+minorMax=${MINOR_MAX} && [ -z "${minorMax}" ] && echo "Variable MINOR_MAX is empty or not set." && exit 1
+revMax=${REV_MAX} && [ -z "${revMax}" ] && echo "Variable REV_MAX is empty or not set." && exit 1
 
-distroName=${DISTRO_NAME} && [ -z "${distroName}" ] && echo "Variable distroName is empty or not set." && exit 1
-distroVer=${DISTRO_VERSION} && [ -z "${distroVer}" ] && echo "Variable distroVer is empty or not set." && exit 1
+distroName=${DISTRO_NAME} && [ -z "${distroName}" ] && echo "Variable DISTRO_NAME is empty or not set." && exit 1
+distroVer=${DISTRO_VERSION} && [ -z "${distroVer}" ] && echo "Variable DISTRO_VERSION is empty or not set." && exit 1
 
-maintName=${MAINT_NAME} && [ -z "${maintName}" ] && echo "Variable maintName is empty or not set." && exit 1
-maintEmail=${MAINT_EMAIL} && [ -z "${maintEmail}" ] && echo "Variable maintEmail is empty or not set." && exit 1
+maintName=${MAINT_NAME} && [ -z "${maintName}" ] && echo "Variable MAINT_NAME is empty or not set." && exit 1
+maintEmail=${MAINT_EMAIL} && [ -z "${maintEmail}" ] && echo "Variable MAINT_EMAIL is empty or not set." && exit 1
 
-srcUrl=${SRC_URL} && [ -z "${srcUrl}" ] && echo "Variable srcUrl is empty or not set." && exit 1
+srcUrl=${IMAGE_SRC_URL} && [ -z "${srcUrl}" ] && echo "Variable IMAGE_SRC_URL is empty or not set." && exit 1
 
 srcFileExt=${srcUrl##*.}
 
@@ -48,11 +48,11 @@ imgFileBak="${imgFile}.bak"
 [[ "${srcFileExt}" == "xz" ]] && imgFileZip="${imgFile}.xz"
 [[ "${srcFileExt}" == "zip" ]] && imgFileZip="${imgFile}.zip"
 
-newImgFile=${DEST_IMG_FILE} && [ -z "${newImgFile}" ] && echo "Variable newImgFile is empty or not set." && exit 1
+newImgFile=${DEST_IMG_FILE} && [ -z "${newImgFile}" ] && echo "Variable DEST_IMG_FILE is empty or not set." && exit 1
 newImgFileZip="${newImgFile}.xz"
 
-growImage=${GROW_IMAGE} && [ -z "${growImage}" ] && echo "Variable growImage is empty or not set." && exit 1
-growSizeMbytes=${GROW_SIZE_MBYTES} && [ -z "${growSizeMbytes}" ] && echo "Variable growSizeMbytes is empty or not set." && exit 1
+growImage=${GROW_IMAGE} && [ -z "${growImage}" ] && echo "Variable GROW_IMAGE is empty or not set." && exit 1
+growSizeMbytes=${GROW_SIZE_MBYTES} && [ -z "${growSizeMbytes}" ] && echo "Variable GROW_SIZE_MBYTES is empty or not set." && exit 1
 
 zeroDev='/dev/zero'
 part1='/media/part1'
@@ -90,13 +90,13 @@ netplanFile="${assetPath}/95-network.yaml"
 cmdlineFile='cmdline.txt'
 cmdlineFile="${part1}/${cmdlineFile}"
 
-delOgUser=${DEL_OG_USER} && [ -z "${delOgUser}" ] && echo "Variable delOgUser is empty or not set." && exit 1
+delOgUser=${DEL_OG_USER} && [ -z "${delOgUser}" ] && echo "Variable DEL_OG_USER is empty or not set." && exit 1
 
 ogUserRaspios='pi'
 ogUserUbuntu='ubuntu'
 
-baseUser=${BASE_USER} && [ -z "${baseUser}" ] && echo "Variable baseUser is empty or not set." && exit 1
-basePass=${BASE_USER_PASS} && [ -z "${basePass}" ] && echo "Variable basePass is empty or not set." && exit 1
+baseUser=${BASE_USER} && [ -z "${baseUser}" ] && echo "Variable BASE_USER is empty or not set." && exit 1
+basePass=${BASE_USER_PASS} && [ -z "${basePass}" ] && echo "WARNING: Variable BASE_USER_PASS is empty or not set."
 
 baseHome="/home/${baseUser}"
 
@@ -104,14 +104,16 @@ baseHome="/home/${baseUser}"
 [[ "${imgOs}" == "rasp"* ]] && baseGroups="adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,render,netdev,gpio,i2c,spi"
 [[ "${imgOs}" == "ubuntu"* ]] && baseGroups="users,adm,dialout,audio,netdev,video,plugdev,cdrom,games,input,sudo"
 
-sshPubKey=${SSH_PUBLIC_KEY} && [ -z "${sshPubKey}" ] && echo "WARNING: Variable sshPubKey is empty or not set." && exit 1
+sshPubKey=${SSH_PUBLIC_KEY} && [ -z "${sshPubKey}" ] && echo "WARNING: Variable SSH_PUBLIC_KEY is empty or not set."
 
-keyType=${SSH_KEY_TYPE} && [ -z "${keyType}" ] && echo "Variable keyType is empty or not set." && exit 1
-keyRounds=${SSH_KEY_ROUNDS} && [ -z "${keyRounds}" ] && echo "Variable keyRounds is empty or not set." && exit 1
-keyBits=${SSH_KEY_BITS} && [ -z "${keyBits}" ] && echo "Variable keyBits is empty or not set." && exit 1
-keyPhrase=${SSH_KEY_PHRASE}&& { [ -z "${keyPhrase}" ] && echo "WARNING: Variable keyPhrase is empty or not set."; }
-keyComment=${SSH_KEY_COMMENT} && [ -z "${keyComment}" ] && echo "Variable keyComment is empty or not set." && exit 1
-keyFile=${SSH_KEY_FILE} && [ -z "${keyFile}" ] && echo "Variable keyFile is empty or not set." && exit 1
+createLocalKey=${CREATE_LOCAL_SSH_KEY} && [ -z "${createLocalKey}" ] && echo "Variable CREATE_LOCAL_SSH_KEY is empty or not set." && exit 1
+
+keyType=${SSH_KEY_TYPE} && [ -z "${keyType}" ] && echo "Variable SSH_KEY_TYPE is empty or not set." && exit 1
+keyRounds=${SSH_KEY_ROUNDS} && [ -z "${keyRounds}" ] && echo "Variable SSH_KEY_ROUNDS is empty or not set." && exit 1
+keyBits=${SSH_KEY_BITS} && [ -z "${keyBits}" ] && echo "Variable SSH_KEY_BITS is empty or not set." && exit 1
+keyPhrase=${SSH_KEY_PHRASE} && [ -z "${keyPhrase}" ] && echo "WARNING: Variable SSH_KEY_PHRASE is empty or not set."
+keyComment=${SSH_KEY_COMMENT} && [ -z "${keyComment}" ] && echo "WARNING: Variable SSH_KEY_COMMENT is empty or not set."
+keyFile=${SSH_KEY_FILE} && [ -z "${keyFile}" ] && echo "Variable SSH_KEY_FILE is empty or not set." && exit 1
 keyFilePub="${keyFile}.pub"
 
 sudoersFile="${part2}/etc/sudoers.d/010_${baseUser}"
@@ -146,10 +148,14 @@ ${bashBin} "${PWD}"/${waitforitScript} -t 30 -h 'deb.debian.org' -p 80
 waitAptitude
 installPackages "${aptPackages}"
 
-# Fetch current version from storage record
 # If from storage not allowed or get fails, use clock value for revision
-[ "${versionFromShare}" -eq 0 ] && imgVer="0.0.$(date '+%s')"
-[ "${versionFromShare}" -eq 1 ] && { imgVer=$(curl -f -L "${imgVerFileUrl}") || { echo "Failed to get image version from URL." && imgVer="${initVer}"; } }
+[ "${versionFromShare}" -eq 0 ] && dateSec=$(date '+%s') && imgVer="0.0.${dateSec}"
+
+# Fetch current version from storage record
+if [ "${versionFromShare}" -eq 1 ]; then 
+	imgVer=$(queryImageVersion "${imgVerFileUrl}")
+	[ -z "${imgVer}" ] && echo "Version file not available. Fallback to init value." && imgVer="${initVer}"
+fi
 
 # shellcheck disable=SC2206
 verArr=(${imgVer//./ })
@@ -168,6 +174,7 @@ else (( rev+=1 ))
 fi
 
 imgVer="${major}.${minor}.${rev}"
+echo "VER: ${imgVer}" && exit 0
 echo ${imgVer} > "${imgVerFile}"
 
 rm -fv ./*.img
@@ -230,9 +237,6 @@ if [ "${growImage}" -eq 1 ]; then
 
 	zerofree -v "${loopDev}p${partRoot}"
 
-#	rm -fv ${extImgFile}
-#	dd status=progress if="${loopDev}" of=${extImgFile} bs=${imgBlockSize}
-
 	sleep 1
 	sync
 	sleep 2
@@ -248,9 +252,6 @@ if [ "${growImage}" -eq 1 ]; then
 	sleep 1
 	sync
 	sleep 2
-
-#	rm -fv ${imgFile}
-#	mv -v ${extImgFile} ${imgFile}
 fi
 
 loopDev=$(losetup -f)
@@ -319,25 +320,29 @@ chroot ${part2} "${qemuBin}" ${bashBin} -vc "useradd -m -G ${baseGroups} -s ${ba
 [ ! -d "${partSshPath}" ] && mkdir -vm 0700 "${partSshPath}"
 
 if [ -n "${sshPubKey}" ]; then
+echo "SSH Public key set. Appending pub key for base user."
 cat >> "${partAuthFile}" << EOF
 ${sshPubKey}
 EOF
 else
-	echo "SSH Public key variable is empty, omitting.."
+	echo "SSH Public key variable not set, omitting public key add."
 fi
 
-if [ "${devMode}" -eq 1 ]; then
-	# NO VERBOSE, password echoed
+# NO VERBOSITY, password being echoed
+if [ "${devMode}" -eq 1 ] && [ -n "${basePass}" ]; then
+	echo "Dev password set. Applying dev password."
 	chroot ${part2} "${qemuBin}" ${bashBin} -c "echo '${baseUser}:${basePass}' | chpasswd"
-
-	# If dev + local, generate new ssh key to local, and append it to auth keys
-	if [ "${localMode}" -eq 1 ]; then
-		rm -fv "${keyFile}"*
-		ssh-keygen -t "${keyType}" -a "${keyRounds}" -b "${keyBits}" -N "${keyPhrase}" -C "${keyComment}" -f "${keyFile}"
-		cat "${keyFilePub}" >> "${partAuthFile}"
-	fi
 else
-chroot ${part2} "${qemuBin}" ${bashBin} -vc "passwd -e -d -l ${baseUser}"
+	echo "Dev password not set. Removing and locking base user password."
+	chroot ${part2} "${qemuBin}" ${bashBin} -vc "passwd -e -d -l ${baseUser}"
+fi
+
+# If local, generate new ssh key to local, and append it to auth keys
+if [ "${localMode}" -eq 1 ] && [ "${createLocalKey}" -eq 1 ]; then
+	echo "Local key creation requested. Creating local ssh key for base user."
+	rm -fv "${keyFile}"*
+	ssh-keygen -t "${keyType}" -a "${keyRounds}" -b "${keyBits}" -N "${keyPhrase}" -C "${keyComment}" -f "${keyFile}"
+	cat "${keyFilePub}" >> "${partAuthFile}"
 fi
 
 chroot ${part2} "${qemuBin}" ${bashBin} -vc "chown -vR ${baseUser}:${baseUser} ${baseHome}"
