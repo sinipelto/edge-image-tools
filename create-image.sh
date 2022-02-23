@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Import common functions
+# shellcheck source=/dev/null
+source common.sh
+
 # Current user NOT root (build agent user)
 # Assuming either current user ROOT user or current user has SUDO
 curId=$(id -u)
@@ -65,7 +69,6 @@ partParamsFile="${part2}/${imgParamsFile}"
 partInfoFile="${part2}/image_info"
 
 # License: MIT - Free/Commercial use + modifications
-waitforitUrl="https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh"
 waitforitScript="wait-for-it.sh"
 
 provisionScript="provision-image.sh"
@@ -75,10 +78,13 @@ resizeLine='s/ init=\/usr\/lib\/raspi-config\/init_resize.sh//g'
 
 systemdPath="${part2}/lib/systemd/system/"
 
+assetPath='image_files'
+
 sshFile='ssh'
-wpaFile='wpa_supplicant.conf'
-netFile='network-config'
-userFile='user-data'
+wpaFile="${assetPath}/wpa_supplicant.conf"
+netFile="${assetPath}/network-config"
+userFile="${assetPath}/user-data"
+netplanFile="${assetPath}/95-network.yaml"
 
 cmdlineFile='cmdline.txt'
 cmdlineFile="${part1}/${cmdlineFile}"
@@ -125,10 +131,17 @@ cpus=$(< /proc/cpuinfo grep -c processor)
 
 [[ ${1} == 'test' ]] && echo "Script self-test OK" && exit 0
 
-curl -f -L -o ${waitforitScript} "${waitforitUrl}"
-chmod -v 0750 ${waitforitScript}
-${bashBin} ${waitforitScript} -t 600 -h "${imgServer}" -p 443
-${bashBin} ${waitforitScript} -t 600 -h "${imgServer}" -p 443
+# Remove scheme abc:// and paths /abc/def/
+imgSrv=$(echo "${imgServer}" | awk -F/ '{print $3}')
+
+chmod -v +x ${waitforitScript}
+${bashBin} "${PWD}"/${waitforitScript} -t 30 -h "${imgSrv}" -p 443
+${bashBin} "${PWD}"/${waitforitScript} -t 30 -h 'archive.ubuntu.com' -p 80
+${bashBin} "${PWD}"/${waitforitScript} -t 30 -h 'packages.microsoft.com' -p 443
+${bashBin} "${PWD}"/${waitforitScript} -t 30 -h 'deb.debian.org' -p 80
+
+waitAptitude
+installPackages "${aptPackages}"
 
 # Fetch current version from storage record
 # If from storage not allowed or get fails, use clock value for revision
@@ -154,10 +167,6 @@ fi
 imgVer="${major}.${minor}.${rev}"
 echo ${imgVer} > "${imgVerFile}"
 
-apt-get update
-# shellcheck disable=SC2068
-apt-get install -y ${aptPackages[@]}
-
 rm -fv ./*.img
 if [ "${devMode}" -eq 1 ] && [ "${localMode}" -eq 1 ] && [ -f "${imgFileBak}" ]; then
 	cp -v ${imgFileBak} ${imgFile}
@@ -166,12 +175,14 @@ else
 	curl -f -L -o ${imgFileZip} "${srcUrl}"
 	[[ ${srcFileExt} == "xz" ]] && unxz -vv -d -k -T "${cpus}" ${imgFileZip}
 	[[ ${srcFileExt} == "zip" ]] && unzip -o ${imgFileZip}
-	mv -v ./*.img ${imgFile}
+	mv -v ./*.img ${imgFile} || true
 #	[ "${localMode}" -eq 1 ] && cp -v ${imgFile} ${imgFile}.bak
 fi
 
+sync
 umount -lfv ${part1} || true
 umount -lfv ${part2} || true
+sync
 
 rm -rfv ${part1}
 rm -rfv ${part2}
@@ -190,30 +201,31 @@ if [ "${growImage}" -eq 1 ]; then
 	losetup -v -f -P ${imgFile}
 
 	parted "${loopDev}" resizepart ${partRoot} 100%
-	
-	sleep 1
-	sync
-	sleep 2
-	partprobe
+
 	sleep 1
 	sync
 	sleep 2
 
-	e2fsck -v -y "${loopDev}p${partRoot}"
+	e2fsck -v -y -f "${loopDev}p${partRoot}"
 
+	sleep 1
+	sync
+	sleep 2
+
+	# No --verbose available
 	resize2fs "${loopDev}p${partRoot}"
 
 	sleep 1
 	sync
 	sleep 2
 
-	e2fsck -v -y "${loopDev}p${partRoot}"
-
-	zerofree -v "${loopDev}p${partRoot}"
+	e2fsck -v -y -f "${loopDev}p${partRoot}"
 
 	sleep 1
 	sync
 	sleep 2
+
+	zerofree -v "${loopDev}p${partRoot}"
 
 #	rm -fv ${extImgFile}
 #	dd status=progress if="${loopDev}" of=${extImgFile} bs=${imgBlockSize}
@@ -221,11 +233,15 @@ if [ "${growImage}" -eq 1 ]; then
 	sleep 1
 	sync
 	sleep 2
+
 	losetup -v -d "${loopDev}"
+
 	sleep 1
 	sync
 	sleep 2
+
 	losetup -v -D
+
 	sleep 1
 	sync
 	sleep 2
@@ -251,14 +267,13 @@ cp -v ${userFile} ${part1}/
 sed -i "${resizeLine}" ${cmdlineFile}
 
 [ ! -d ${rootBin} ] && mkdir -vm 0700 ${rootBin}
-
-curl -f -L -o ${rootBin}/${waitforitScript} "${waitforitUrl}"
-
+cp -v ${waitforitScript} ${rootBin}/
 cp -v ${provisionScript} ${rootBin}/
-
 chmod -vR 0700 ${rootBin}
 
 cp -v ${provisionService} ${systemdPath}/
+
+[[ ${imgOs} == "ubuntu"* ]] && cp -v ${netplanFile} ${part2}/etc/netplan/
 
 cat > "${partParamsFile}" << EOF
 export IMAGE_VERSION='${imgVer}'
@@ -267,6 +282,7 @@ export IMAGE_ARCH='${imgArch}'
 export IMAGE_VER_FILE='${imgVerFile}'
 export IMAGE_SERVER_URL='${imgServer}'
 export SAS_TOKEN_URL_QUERY='${sasToken}'
+export DEV_EDGE_CONNECTION_STRING='${DEV_EDGE_CONNECTION_STRING}'
 EOF
 chmod -v 0444 "${partParamsFile}"
 
@@ -285,7 +301,7 @@ chmod -v 0440 "${sudoersFile}"
 
 cp -v "$(which "${qemuBin}")" ${part2}/usr/bin/
 
-sed -i 's/^/#/g' ${part2}/etc/ld.so.preload
+sed -i 's/^/#/g' ${part2}/etc/ld.so.preload && preloadModified=1 || preloadModified=0
 
 chroot ${part2} "${qemuBin}" ${bashBin} -vc "systemctl enable ${provisionService}"
 
@@ -324,7 +340,7 @@ chroot ${part2} "${qemuBin}" ${bashBin} -vc "chown -vR ${baseUser}:${baseUser} $
 
 chroot ${part2} "${qemuBin}" ${bashBin} -vc "chmod -v 0644 ${authFile}"
 
-sed -i 's/^#//g' ${part2}/etc/ld.so.preload
+[ ${preloadModified} -eq 1 ] && sed -i 's/^#//g' ${part2}/etc/ld.so.preload
 
 sleep 1
 sync
