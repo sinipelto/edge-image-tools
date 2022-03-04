@@ -73,11 +73,12 @@ export MAINT_EMAIL='some.person@company.com'
 # 2022-02-21: Does NOT work with Azure IoT Edge AT ALL -> RaspiOS Arm64 not supported
 # export IMAGE_SRC_URL='https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2022-01-28/2022-01-28-raspios-bullseye-arm64-lite.zip'
 
-# RaspiOS Lite Arm32
-# 2022-02-21: Does not work directly with AzIoTEdge -> Cgroups error
-export IMAGE_SRC_URL='https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2022-01-28/2022-01-28-raspios-bullseye-armhf-lite.zip'
+# RaspiOS Lite Arm32 Debian 11 Bullseye
+# 2022-02-21: Does not work directly with AzIoTEdge -> Cgroups error -> Azure IoT Edge 1.2 supports Stretch, not Bullseye!!
+# export IMAGE_SRC_URL='https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2022-01-28/2022-01-28-raspios-bullseye-armhf-lite.zip'
 
 # RaspiOS Arm32 WITH desktop env
+# 2022-03-04: Unnecessarily large image, if desktop environment is not explicitly required, this image should not be selected!
 # export IMAGE_SRC_URL='https://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-2022-01-28/2022-01-28-raspios-bullseye-armhf.zip'
 
 # Ubuntu Server 18.04.5 LTS ARM64 Preinstalled for Raspberry Pi 3
@@ -85,7 +86,12 @@ export IMAGE_SRC_URL='https://downloads.raspberrypi.org/raspios_lite_armhf/image
 # export IMAGE_SRC_URL='https://cdimage.ubuntu.com/releases/18.04/release/ubuntu-18.04.5-preinstalled-server-arm64+raspi3.img.xz'
 
 # Ubuntu Server 20.04.3 LTS ARM64 Preinstalled Raspi 3/4
+# 2022-02-23: This works! After rovisioning process the edge device status is OK. Takes a while to set up the containers before fully up and running.
+# 2022-03-04: Does NOT EXIST anymore! See 20.04.4 LTS for an updated release!
 # export IMAGE_SRC_URL='https://cdimage.ubuntu.com/releases/20.04/release/ubuntu-20.04.3-preinstalled-server-arm64+raspi.img.xz'
+
+# Ubuntu Server 20.04.4 LTS ARM64 Preinstalled Raspi 3/4
+export IMAGE_SRC_URL='https://cdimage.ubuntu.com/releases/20.04/release/ubuntu-20.04.4-preinstalled-server-arm64+raspi.img.xz'
 
 # Expand the image root filesystem?
 # NOTE: RaspiOS has rootfs shrunk to 0% free space
@@ -96,10 +102,11 @@ export GROW_IMAGE=1
 export GROW_SIZE_MBYTES=1024
 
 # User name for the created user
-export BASE_USER='base'
+# Set to EMPTY string or remove the variable if the new user should NOT be created
+export BASE_USER='edgeuser'
 
-# Dev password to be set on the created user
-# Set EMPTY if the password should be DISABLED for the base user
+# Base user local password to be set on the created user
+# Set to EMPTY string or remove the variable if the password should be DISABLED for the base user
 # TODO FROM SECURE LOCATION!
 export BASE_USER_PASS='eXaMplePaSS1234'
 

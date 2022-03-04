@@ -303,10 +303,12 @@ Publish Date: $(date)
 EOF
 chmod -v 0444 ${partInfoFile}
 
+if [ -n "${baseUser}" ]; then
 cat > "${sudoersFile}" << EOF
 ${baseUser} ALL=(ALL) NOPASSWD:ALL
 EOF
 chmod -v 0440 "${sudoersFile}"
+fi
 
 cp -v "$(which "${qemuBin}")" ${part2}/usr/bin/
 
@@ -318,6 +320,8 @@ if [ "${delOgUser}" -eq 1 ]; then
 	{ [[ ${imgOs} == "rasp"* ]] && chroot ${part2} "${qemuBin}" ${bashBin} -vc "userdel -rf ${ogUserRaspios}"; } || true
 	{ [[ ${imgOs} == "ubuntu"* ]] && chroot ${part2} "${qemuBin}" ${bashBin} -vc "userdel -rf ${ogUserUbuntu}"; } || true
 fi
+
+if [ -n "${baseUser}" ]; then
 
 chroot ${part2} "${qemuBin}" ${bashBin} -vc "useradd -m -G ${baseGroups} -s ${bashBin} ${baseUser}"
 
@@ -334,10 +338,10 @@ fi
 
 # NO VERBOSITY, password being echoed
 if [ "${devMode}" -eq 1 ] && [ -n "${basePass}" ]; then
-	echo "Dev password set. Applying dev password."
+	echo "Base user password set. Applying password.."
 	chroot ${part2} "${qemuBin}" ${bashBin} -c "echo '${baseUser}:${basePass}' | chpasswd"
 else
-	echo "Dev password not set. Removing and locking base user password."
+	echo "Base user password not set. Removing expiring and locking base user password."
 	chroot ${part2} "${qemuBin}" ${bashBin} -vc "passwd -e -d -l ${baseUser}"
 fi
 
@@ -352,6 +356,8 @@ fi
 chroot ${part2} "${qemuBin}" ${bashBin} -vc "chown -vR ${baseUser}:${baseUser} ${baseHome}"
 
 chroot ${part2} "${qemuBin}" ${bashBin} -vc "chmod -v 0644 ${authFile}"
+
+fi
 
 [ ${preloadModified} -eq 1 ] && sed -i 's/^#//g' ${part2}/etc/ld.so.preload
 
