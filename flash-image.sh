@@ -1,14 +1,19 @@
 #!/bin/bash
 set -e
 
+listDevices() {
+	devices=$(find /dev/ -type b -name "sd[a-z]")
+	echo -e "USAGE: ${0} <device>\nList of SCSI block devices:\n${devices}"
+}
+
 # For windows machines, this check is not valid so omit it
 kernel=$(uname -a)
 kernel=${kernel,,}
 userId=$(id -u)
-[[ ${kernel} =~ "mingw" || ${kernel} =~ "cygwin" ]] || { (( userId != 0 )) && echo "Current user not root. This script must be run as root user or with sudo privileges." && exit 1; }
+[[ ${kernel} =~ "mingw" || ${kernel} =~ "cygwin" ]] || { (( userId != 0 )) && echo "Bash Emulator not detected and current user not root/sudo. This script must be run as root user or with sudo privileges." && exit 1; }
 
-devices=$(ls -l /dev/sd*)
-targetDev="${1}" && [ -z "${targetDev}" ] && echo "Given targetDev is empty or not set." && echo -e "USAGE: ${0} <device>\nList of SCSI block devices: ${devices}" && exit 1
+targetDev="${1}" && [ -z "${targetDev}" ] && echo "Given targetDev is empty or not set." && listDevices && exit 1
+[[ ! -b ${targetDev} ]] && echo "Block device '${targetDev}' does not exist!" && listDevices && exit 1
 
 # [[ ${targetDev} == *"sda"* || ${targetDev} == *"sdb"* || ${targetDev} == *"sdc"* ]] && echo "ERROR: Protected device." && exit 1
 
@@ -38,8 +43,6 @@ imgFilesListUrl="${imgServer}/${imgOs}/${imgArch}${sasToken}&comp=list&restype=d
 #################
 
 cd "${workingDir}"
-
-[[ ! -b ${targetDev} ]] && echo "Device ${targetDev} not found!" && exit 1
 
 read -rp "DATA LOSS WARNING! Selected device: ${targetDev}. Continue? (y/n) " ans
 
