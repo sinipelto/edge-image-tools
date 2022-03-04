@@ -157,6 +157,8 @@ if [ "${versionFromShare}" -eq 1 ]; then
 	[ -z "${imgVer}" ] && echo "Version file not available. Fallback to init value." && imgVer="${initVer}"
 fi
 
+echo "Old Image Version: ${imgVer}"
+
 # shellcheck disable=SC2206
 verArr=(${imgVer//./ })
 
@@ -174,7 +176,9 @@ else (( rev+=1 ))
 fi
 
 imgVer="${major}.${minor}.${rev}"
-echo "VER: ${imgVer}" && exit 0
+
+echo "New Image Version: ${imgVer}"
+
 echo ${imgVer} > "${imgVerFile}"
 
 rm -fv ./*.img
