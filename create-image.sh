@@ -127,7 +127,7 @@ partAuthFile="${part2}${authFile}"
 aptPackages='coreutils bash grep util-linux curl fdisk zip unzip xz-utils binfmt-support qemu-user-static'
 
 # Get CPU thread count for multithreading params
-cpus=$(< /proc/cpuinfo grep -c processor)
+cpus=$(nproc)
 
 
 #################
