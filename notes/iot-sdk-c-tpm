@@ -1,0 +1,19 @@
+set -e
+
+iotSdkRepoName='azure-iot-sdk-c'
+iotSdkRepoVersion='1.9.0'
+iotSdkRepoUrl="https://github.com/Azure/${iotSdkRepoName}.git"
+
+
+cd azure-iot-sdk-c/
+0
+
+git sub
+
+
+git clone -b 1.9.0 https://github.com/Azure/azure-iot-sdk-c.git 
+
+cd azure-iot-sdk-c/
+git submodule init
+git submodule update
+

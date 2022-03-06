@@ -1,0 +1,165 @@
+requiredPkgs='git cmake build-essential curl libcurl4-openssl-dev libssl-dev uuid-dev libseccomp-dev libgnutls28-dev ca-certificates automake autoconf bash coreutils dh-autoreconf libtasn1-6-dev net-tools iproute2 libjson-glib-dev expect libtool sed devscripts equivs gcc dh-exec pkg-config gawk make socat'
+
+
+sudo apt-get -y install automake autoconf libtool gcc build-essential libssl-dev dh-exec pkg-config dh-autoreconf
+
+sudo apt-get install dh-autoreconf libssl-dev \
+     libtasn1-6-dev pkg-config \
+     net-tools iproute2 libjson-glib-dev \
+     libgnutls28-dev expect gawk socat \
+     libseccomp-dev make -y
+
+
+# no --signing-key: "some platforms will not accept an EK as a signing key"
+# --display needed?
+# --logfile => not set = stderr stdout => for build agent its best
+# --create-config-files => is it needed? we have default configs in /etc
+
+
+swtpm_setup \
+--print-capabilities
+
+
+--ecc \
+--not-overwrite \
+
+
+export TPM_PATH=/root/tpm
+export TPM_PORT=2321
+
+rm -vrf ${TPM_PATH}
+mkdir -vpm 0700 ${TPM_PATH}
+
+
+swtpm_setup \
+--runas 0 \
+--tpmstate ${TPM_PATH} \
+--tpm2 \
+--createek \
+--decryption \
+--create-ek-cert \
+--create-platform-cert \
+--lock-nvram \
+--overwrite \
+--display \
+--vmid iotedge-base-image \
+--rsa-keysize 2048
+
+
+# doesnt work
+--fd tpm0 \
+
+# doesnt work
+touch /dev/tpm0
+chmod 0777 /dev/tpm0
+
+# doesnt work
+--fd /dev/tpm0 \
+
+
+--server type=unixio,path=/dev/tpm0,mode=0770 \
+
+pkill swtpm
+swtpm socket \
+--daemon \
+--server type=tcp,port=2321,disconnect \
+--ctrl type=tcp,port=2322 \
+--tpmstate dir=${TPM_PATH} \
+--tpm2 \
+--flags not-need-init,startup-clear \
+--runas 0 \
+--log file=tpm.log,level=20
+
+swtpm socket \
+--port 2321 \
+--daemon \
+--tpm2
+
+
+# doesnt work
+swtpm chardev \
+--chardev tpm0 \
+--vtpm-proxy \
+--fd tpm0 \
+--daemon \
+--tpm2
+
+
+sudo apt update
+sudo apt install tpm2-tools
+
+
+# Exec on AZ VM:
+
+scp common.sh azvm: && scp tpm-simulator.sh azvm: && ssh azvm -C "chmod +x *.sh && sudo ./tpm-simulator.sh"
+
+scp common.sh raspi: && scp tpm-simulator.sh raspi: && ssh raspi -C "chmod +x *.sh && sudo ./tpm-simulator.sh"
+
+
+
+
+# mkdir -vp /root/tpm
+mkdir: created directory '/root/tpm'
+#
+# swtpm_setup \
+> --tpm-state /root/tpm \
+> --tpm2 \
+> --createek \
+> --decryption \
+> --ecc \
+> --create-ek-cert \
+> --create-platform-cert \
+> --display \
+> --not-overwrite \
+> --vmid iotedge-base-image
+Starting vTPM manufacturing as root:root @ Sun 06 Mar 2022 12:01:47 PM UTC
+TPM is listening on Unix socket.
+Successfully created RSA 2048 EK with handle 0x81010001.
+  Invoking /usr/bin/swtpm_localca --type ek --ek 9ee6a01c77f1c92ab54778d4a35deb3bce9f8cec24d1ad03672cfacb2867d46a824987610d84941cd71964ea32afae7f43bbb501dfdb5da8bae6fa9288aa4036965a398df9f0ab46ba6a690e883cab9b50a56f4e09c3dc16448512180bfcaa64ddf85d0bda0ba148cfcb3bbd8208d951c04e740a016f635264a0bdefe151593965aefadb668098d600804c1ce28f35295147f7a8c0b09d8af64c1d317d96e5450a4e17fcf977b2618b9df220ab5f9d2c865395458448f65eb8d2c36a4bcc65afee41e6e12c22a93c652866a77646a55f10389a74c8964860b6ff00cf6b2168b21e82541f262cc94f82a10f8746d772bb0d55ce33c1db9d972878d4bc079add57 --dir /tmp/swtpm_setup.certs.F3IPI1 --vmid iotedge-base-image --tpm-spec-family 2.0 --tpm-spec-level 0 --tpm-spec-revision 164 --tpm-manufacturer id:00001014 --tpm-model swtpm --tpm-version id:20191023 --tpm2 --configfile /etc/swtpm-localca.conf --optsfile /etc/swtpm-localca.options
+swtpm_localca: Creating root CA and a local CA's signing key and issuer cert.
+swtpm_localca: Successfully created EK certificate locally.
+  Invoking /usr/bin/swtpm_localca --type platform --ek 9ee6a01c77f1c92ab54778d4a35deb3bce9f8cec24d1ad03672cfacb2867d46a824987610d84941cd71964ea32afae7f43bbb501dfdb5da8bae6fa9288aa4036965a398df9f0ab46ba6a690e883cab9b50a56f4e09c3dc16448512180bfcaa64ddf85d0bda0ba148cfcb3bbd8208d951c04e740a016f635264a0bdefe151593965aefadb668098d600804c1ce28f35295147f7a8c0b09d8af64c1d317d96e5450a4e17fcf977b2618b9df220ab5f9d2c865395458448f65eb8d2c36a4bcc65afee41e6e12c22a93c652866a77646a55f10389a74c8964860b6ff00cf6b2168b21e82541f262cc94f82a10f8746d772bb0d55ce33c1db9d972878d4bc079add57 --dir /tmp/swtpm_setup.certs.F3IPI1 --vmid iotedge-base-image --tpm-spec-family 2.0 --tpm-spec-level 0 --tpm-spec-revision 164 --tpm-manufacturer id:00001014 --tpm-model swtpm --tpm-version id:20191023 --tpm2 --configfile /etc/swtpm-localca.conf --optsfile /etc/swtpm-localca.options
+swtpm_localca: Successfully created platform certificate locally.
+Successfully created NVRAM area 0x1c00002 for RSA 2048 EK certificate.
+Successfully created NVRAM area 0x1c08000 for platform certificate.
+Successfully created ECC EK with handle 0x81010016.
+  Invoking /usr/bin/swtpm_localca --type ek --ek x=1ddccaa913fe788b14a1aa6e57da719b7fc573a12a321dc039dd9b95987fc90d16c948e6592ac5bf1fc07b395812e6d4,y=afc54c1b2baf4127dff3918cae3ccf3065275bca3fcbc552747e573fc268f5d75b785b2ca007f07c13f57fa9f9f3a75f,id=secp384r1 --dir /tmp/swtpm_setup.certs.F3IPI1 --vmid iotedge-base-image --tpm-spec-family 2.0 --tpm-spec-level 0 --tpm-spec-revision 164 --tpm-manufacturer id:00001014 --tpm-model swtpm --tpm-version id:20191023 --tpm2 --configfile /etc/swtpm-localca.conf --optsfile /etc/swtpm-localca.options
+swtpm_localca: Successfully created EK certificate locally.
+Successfully created NVRAM area 0x1c00016 for ECC EK certificate.
+Successfully activated PCR banks sha256 among sha1,sha256,sha384,sha512.
+Successfully authored TPM state.
+Ending vTPM manufacturing @ Sun 06 Mar 2022 12:01:48 PM UTC
+
+
+
+
+
+# swtpm_setup \
+> --runas 0 \
+> --tpmstate ${TPM_PATH} \
+> --tpm2 \
+> --createek \
+> --decryption \
+> --create-ek-cert \
+> --create-platform-cert \
+> --lock-nvram \
+> --overwrite \
+> --display \
+> --vmid iotedge-base-image \
+> --rsa-keysize 2048
+Starting vTPM manufacturing as root:root @ Sun 06 Mar 2022 03:49:49 PM UTC
+TPM is listening on Unix socket.
+Successfully created RSA 2048 EK with handle 0x81010001.
+  Invoking /usr/bin/swtpm_localca --type ek --ek 94d318061ff769d0813cd94a56803a6d0e4c7de0ff4576ccd93aa1ac5d64c8cc35a965c1ae4ebe5131de4b3459d7f721ca8b9a061e99e89618e614ffaa5240174c88838142eb39ce8b3e4f648f0f610c3e27225b5f005e4f41c9fd5b33165a40878e929c510cc879e43f471819a5edf2e2cb8385429c6f291eccb465de6c8465560cf1df9ec7709b09cdb19b1312921a7f43af79fb91384b855184afdfa3a68a063cefdde60ca1a25051282f8102cc41e3b65528b14ba92ce21af65147db9b1777016196013c85085493e3528042f6ba711eb1d05ab5aa16ef1a7054eefe23064feb5ef8d62a68d2cf6774bede822a77f6a4d99e80b3f0733ab3dfc8f4ba03dd --dir /tmp/swtpm_setup.certs.1NNJI1 --vmid iotedge-base-image --tpm-spec-family 2.0 --tpm-spec-level 0 --tpm-spec-revision 164 --tpm-manufacturer id:00001014 --tpm-model swtpm --tpm-version id:20191023 --tpm2 --configfile /etc/swtpm-localca.conf --optsfile /etc/swtpm-localca.options
+swtpm_localca: Successfully created EK certificate locally.
+  Invoking /usr/bin/swtpm_localca --type platform --ek 94d318061ff769d0813cd94a56803a6d0e4c7de0ff4576ccd93aa1ac5d64c8cc35a965c1ae4ebe5131de4b3459d7f721ca8b9a061e99e89618e614ffaa5240174c88838142eb39ce8b3e4f648f0f610c3e27225b5f005e4f41c9fd5b33165a40878e929c510cc879e43f471819a5edf2e2cb8385429c6f291eccb465de6c8465560cf1df9ec7709b09cdb19b1312921a7f43af79fb91384b855184afdfa3a68a063cefdde60ca1a25051282f8102cc41e3b65528b14ba92ce21af65147db9b1777016196013c85085493e3528042f6ba711eb1d05ab5aa16ef1a7054eefe23064feb5ef8d62a68d2cf6774bede822a77f6a4d99e80b3f0733ab3dfc8f4ba03dd --dir /tmp/swtpm_setup.certs.1NNJI1 --vmid iotedge-base-image --tpm-spec-family 2.0 --tpm-spec-level 0 --tpm-spec-revision 164 --tpm-manufacturer id:00001014 --tpm-model swtpm --tpm-version id:20191023 --tpm2 --configfile /etc/swtpm-localca.conf --optsfile /etc/swtpm-localca.options
+swtpm_localca: Successfully created platform certificate locally.
+Successfully created NVRAM area 0x1c00002 for RSA 2048 EK certificate.
+Successfully created NVRAM area 0x1c08000 for platform certificate.
+Successfully created ECC EK with handle 0x81010016.
+  Invoking /usr/bin/swtpm_localca --type ek --ek x=6a99274f33a3d4b6c8bb74e5bae2c946f7ee24b8f67b4206509d674c8963597b31f57510a56d259b4442dea8dacd9f41,y=bce319129f7b4675759a50f56d30a6946ad5a91388e7cad7b115db9072e75fc886901340995ee5ab71ec06b407a62ba4,id=secp384r1 --dir /tmp/swtpm_setup.certs.1NNJI1 --vmid iotedge-base-image --tpm-spec-family 2.0 --tpm-spec-level 0 --tpm-spec-revision 164 --tpm-manufacturer id:00001014 --tpm-model swtpm --tpm-version id:20191023 --tpm2 --configfile /etc/swtpm-localca.conf --optsfile /etc/swtpm-localca.options
+swtpm_localca: Successfully created EK certificate locally.
+Successfully created NVRAM area 0x1c00016 for ECC EK certificate.
+Successfully activated PCR banks sha256 among sha1,sha256,sha384,sha512.
+Successfully authored TPM state.
+Ending vTPM manufacturing @ Sun 06 Mar 2022 03:49:49 PM UTC
