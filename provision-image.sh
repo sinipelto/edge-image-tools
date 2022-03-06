@@ -64,11 +64,14 @@ ensure_apt() {
 base_config() {
 	echo "Running system base configurations.."
 
+	# These must be done on a running system => in provision script
 	sed -i 's/^REGDOMAIN=.*/REGDOMAIN=FI/' /etc/default/crda
 	rm -f /etc/xdg/autostart/piwiz.desktop
 	localectl set-x11-keymap "fi" pc105
 	setupcon -k --force
 
+	# For some systems (e.g. Ubuntu) the initial user(s) are created
+	# only after the system first boot => delete needed in provision script
 	echo "Ensure original user deleted."
 	# shellcheck disable=SC2015
 	[[ ${os} == "ubuntu"* ]] && userdel -rf ${initUserUbuntu} || true
@@ -107,6 +110,7 @@ config_sources() {
 }
 
 install_deps() {
+	# Apt-get does not work without the actual running system => apt installs in provision script
 	echo "Install dependencies.."
 
 	ensure_apt
@@ -126,7 +130,7 @@ install_deps() {
 	echo "Install dependencies done."
 }
 
-config_edge() {
+configure_edge() {
 	echo "Configure iot edge specific settings.."
 
 	echo "Fetch provisioning information.."
@@ -162,7 +166,7 @@ provision() {
 	base_config
 	config_sources
 	install_deps
-	config_edge
+	configure_edge
 
 	echo "Mark the system provisioned."
 	echo -e "${provText}" > ${provFile}
