@@ -1,16 +1,15 @@
 #!/bin/bash
-set -e
 
 waitAptitude() {
 	local count=0
-	local countMax=300
-	local unit=1
+	local countMax=${1:-300}
+	local unit=${2:-1}
 
 	echo "Waiting for previous apt session to finish.."
 
 	while (( count < countMax )) && [[ $(pgrep -af apt) != "" ]]; do
 		(( count += unit ))
-		sleep ${unit}
+		sleep "${unit}"
 	done
 
 	(( count >= countMax )) && echo "ERROR: Wait threshold reached. Could not access aptitude." && return 1
