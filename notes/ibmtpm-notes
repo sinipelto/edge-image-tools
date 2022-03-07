@@ -1,0 +1,41 @@
+CREATEEK(1)                                                                          User Commands                                                                         CREATEEK(1)
+
+NAME
+       createek - Runs TPM2 createek
+
+DESCRIPTION
+       createek
+
+       Parses and prints the various EK NV indexes specified by the IWG Creates an EK primary key based on the EK NV indexes
+
+       [-pwde endorsement hierarchy password (default empty)]
+
+       [-pwdk password for endorsement key (default empty)]
+
+       [-high Use the IWG NV high range. Specify before algorithm]
+
+       -rsa keybits
+
+              2048 3072 4096
+
+       -ecc curve
+
+              nistp256 nistp384 nistp521
+
+       -te    print EK Template
+
+       -no    print EK nonce
+
+       -ce    print EK certificate
+
+       -cp    CreatePrimary using the EK template and EK nonce.  Validate the EK against the EK certificate
+
+       [-noflush
+              Do not flush the primary key after validation]
+
+       [-root filename - validate EK certificate against the root] filename contains a list of PEM format CA root certificate filenames, one per line.  The list may contain up to 100
+              certificates.
+
+createek 1.6                                                                         November 2020                                                                         CREATEEK(1)
+
+

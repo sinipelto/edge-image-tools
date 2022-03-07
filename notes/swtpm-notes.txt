@@ -24,8 +24,7 @@ swtpm_setup \
 --not-overwrite \
 
 
-export TPM_PATH=/root/tpm
-export TPM_PORT=2321
+export TPM_PATH=/tmp/vtpm
 
 rm -vrf ${TPM_PATH}
 mkdir -vpm 0700 ${TPM_PATH}
@@ -53,6 +52,18 @@ swtpm_setup \
 touch /dev/tpm0
 chmod 0777 /dev/tpm0
 
+pkill swtpm
+swtpm socket \
+--daemon \
+--server type=unixio,path=/dev/tpm0,mode=0777 \
+--ctrl type=unixio,path=/dev/tpmctrl0,mode=0777 \
+--tpmstate dir=${TPM_PATH} \
+--tpm2 \
+--flags not-need-init,startup-clear \
+--runas 0 \
+--log file=${PWD}/tpm.log,level=20,prefix='$(date)',truncate
+
+
 # doesnt work
 --fd /dev/tpm0 \
 
@@ -68,12 +79,7 @@ swtpm socket \
 --tpm2 \
 --flags not-need-init,startup-clear \
 --runas 0 \
---log file=tpm.log,level=20
-
-swtpm socket \
---port 2321 \
---daemon \
---tpm2
+--log file=${PWD}/tpm.log,level=20,truncate
 
 
 # doesnt work
@@ -84,6 +90,8 @@ swtpm chardev \
 --daemon \
 --tpm2
 
+
+resourcemgr -sim
 
 sudo apt update
 sudo apt install tpm2-tools
@@ -163,3 +171,60 @@ Successfully created NVRAM area 0x1c00016 for ECC EK certificate.
 Successfully activated PCR banks sha256 among sha1,sha256,sha384,sha512.
 Successfully authored TPM state.
 Ending vTPM manufacturing @ Sun 06 Mar 2022 03:49:49 PM UTC
+
+
+
+
+EXAMPLES
+       Execute daemon with default TCTI and options:
+          tpm2-abrmd
+
+       Execute daemon with default TCTI and provided config string:
+          tpm2-abrmd --tcti=":/dev/tpm0"
+
+       This is equivalent to:
+          tpm2-abrmd --tcti="device:/dev/tpm0"
+          tpm2-abrmd --tcti="libtss2-tcti-device.so.0:/dev/tpm0"
+
+       Have daemon use swtpm TPM2 Simulator tcti library
+          This connects to a TPM2 simulator via a TCP swtpm.
+          tpm2-abrmd --tcti="swtpm"
+          tpm2-abrmd --tcti="libtss2-tcti-swtpm.so.0"
+
+       Have daemon use tcti library 'libtss2-tcti-swtpm.so.0' and config string
+          tpm2-abrmd --tcti=swtpm:host=127.0.0.1,port=5555"
+          tpm2-abrmd --tcti="libtss2-tcti-swtpm.so.0:host=127.0.0.1,port=5555"
+
+
+
+
+
+TPM2-TSS(1)                                                                 resourcemgr User Manual                                                                TPM2-TSS(1)
+
+NAME
+       resourcemgr - daemon to maintain TPM resources
+
+SYNOPSIS
+       resourcemgr [-sim] [-tpmhost {hostname | ip_addr}] [-tpmport port] [-apport port]
+
+DESCRIPTION
+       This manual page documents briefly the resourcemgr command.
+
+       This manual page was written for the Debian distribution because the original program does not have a manual page.
+
+       resourcemgr is a daemon that manages the resources of TPM.
+
+OPTIONS
+       The program's long options starts with one dashes (`-'). A summary of options is included below.
+
+       -sim
+           tells resource manager to communicate with TPM 2.0 simulator (default: communicates with local TPM; must be specified for running on Windows)
+
+       -tpmhost {hostname | ip_addr}
+           specifies the host IP address for communicating with the TPM (default: 127.0.0.1; only valid if -sim used)
+
+       -tpmport port
+           specifies the port number for communicating with the TPM (default: 2321; only valid if -sim used)
+
+       -apport port
+           specifies the port number for communicating with the calling application (default: 2323)
