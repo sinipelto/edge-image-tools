@@ -39,3 +39,6 @@ DESCRIPTION
 createek 1.6                                                                         November 2020                                                                         CREATEEK(1)
 
 
+UPDATE 2022-03-08:
+We wont be using ibm tpm sim since persisting / storing /recovering states would be more difficult
+than with swtpm

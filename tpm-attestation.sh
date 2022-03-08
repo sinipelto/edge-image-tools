@@ -34,9 +34,6 @@ iotDpsIdScope='0ne00000000'
 iotProtocol='AMQP'
 iotHsmType='SECURE_DEVICE_TYPE_TPM'
 
-workingDir=${PWD}
-# workingDir="/root"
-
 # Get CPU thread count for multithreading params
 cpus=$(nproc)
 
@@ -44,8 +41,6 @@ cpus=$(nproc)
 ################################################################################
 ################################	START	####################################
 ################################################################################
-
-cd "${workingDir}"
 
 waitAptitude
 installPackages "${requiredPkgs}"
@@ -56,7 +51,7 @@ git clone -b ${repoVersion} ${repoUrl}
 
 cd ${repoName}
 
-git submodule update --init
+git submodule update --init --recursive
 
 # sed 's/^[[:space:]]*#define SAMPLE_/\/\/&/' test.c > out.c && cat out.c
 # sed "s/\/\/[[:space:]]*#define SAMPLE_${iotProtocol}$/#define SAMPLE_${iotProtocol}/" out.c
@@ -80,6 +75,8 @@ cmake -Duse_prov_client:BOOL=ON ..
 
 cmake --build . -- -j "${cpus}"
 
-# TODO: run tpm provision bin to get the EK and RegID
+echo "" | ./provisioning_client/tools/tpm_device_provision/tpm_device_provision
 
-echo "DONE"
+cd ../../
+
+echo "tpm-attestation.sh DONE"

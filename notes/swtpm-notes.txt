@@ -22,6 +22,7 @@ swtpm_setup \
 
 --ecc \
 --not-overwrite \
+--rsa-keysize 2048
 
 
 export TPM_PATH=/tmp/vtpm
@@ -41,8 +42,7 @@ swtpm_setup \
 --lock-nvram \
 --overwrite \
 --display \
---vmid iotedge-base-image \
---rsa-keysize 2048
+--vmid iotedge-base-image
 
 
 # doesnt work
@@ -71,6 +71,8 @@ swtpm socket \
 --server type=unixio,path=/dev/tpm0,mode=0770 \
 
 pkill swtpm
+mkdir -vpm 0700 ${TPM_PATH}
+export TPM_PATH=/tmp/vtpm
 swtpm socket \
 --daemon \
 --server type=tcp,port=2321,disconnect \
@@ -79,7 +81,7 @@ swtpm socket \
 --tpm2 \
 --flags not-need-init,startup-clear \
 --runas 0 \
---log file=${PWD}/tpm.log,level=20,truncate
+--log file=/tmp/tpm.log,level=20,truncate
 
 
 # doesnt work
@@ -228,3 +230,15 @@ OPTIONS
 
        -apport port
            specifies the port number for communicating with the calling application (default: 2323)
+
+
+
+
+UPDATE 2022-03-08:
+Not using resourcemgr from tpm2-tss since it is deprecated and seems not to work with swtpm.
+
+Instead, using the tpm2-abrmd resource manager library by tpm2-software
+
+It works when --tcti "swtpm"
+
+azure-sdk-c tools communicate with the TPM ok.
