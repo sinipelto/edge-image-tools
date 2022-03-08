@@ -342,7 +342,7 @@ if [ "${devMode}" -eq 1 ] && [ -n "${basePass}" ]; then
 	chroot ${part2} "${qemuBin}" ${bashBin} -c "echo '${baseUser}:${basePass}' | chpasswd"
 else
 	echo "Base user password not set. Removing expiring and locking base user password."
-	chroot ${part2} "${qemuBin}" ${bashBin} -vc "passwd -e -d -l ${baseUser}"
+	chroot ${part2} "${qemuBin}" ${bashBin} -vc "passwd -d -l ${baseUser}"
 fi
 
 # If local, generate new ssh key to local, and append it to auth keys
