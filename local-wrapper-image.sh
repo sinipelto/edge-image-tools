@@ -1,6 +1,4 @@
 #!/bin/bash
-
-# Do not tolerate any errors
 set -e
 
 # Assuming either current user ROOT user or current user has SUDO
@@ -14,23 +12,25 @@ source config/local_config
 bashBin='/bin/bash'
 
 # Scripts to execute in this local wrapper
-createScript="${PWD}/create-image.sh"
-publishScript="${PWD}/publish-image.sh"
+scripts=("${PWD}/create-image.sh" "${PWD}/publish-image.sh")
 
 
-#################
-##### START #####
-#################
+################################################################################
+################################	START	####################################
+################################################################################
 
-chmod -v +x "${createScript}"
-chmod -v +x "${publishScript}"
+# shellcheck disable=SC2068
+for script in ${scripts[@]}; do
+	chmod -v +x "${script}"
+	# Test all params are correctly set
+	${bashBin} "${script}" 'test'
+done
 
-# Test all params are correctly set
-${bashBin} "${createScript}" 'test'
-${bashBin} "${publishScript}" 'test'
-
+# If only testing, dont execute
 if [[ ${1} != 'test' ]]; then
-	# If all ok, run the scripts
-	${bashBin} "${createScript}"
-	${bashBin} "${publishScript}"
+	# shellcheck disable=SC2068
+	for script in ${scripts[@]}; do
+		# If all ok, run the scripts
+		${bashBin} "${script}"
+	done
 fi

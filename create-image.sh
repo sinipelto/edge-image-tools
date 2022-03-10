@@ -51,8 +51,8 @@ imgFileBak="${imgFile}.bak"
 newImgFile=${DEST_IMG_FILE} && [ -z "${newImgFile}" ] && echo "Variable DEST_IMG_FILE is empty or not set." && exit 1
 newImgFileZip="${newImgFile}.xz"
 
-growImage=${GROW_IMAGE} && [ -z "${growImage}" ] && echo "Variable GROW_IMAGE is empty or not set." && exit 1
-growSizeMbytes=${GROW_SIZE_MBYTES} && [ -z "${growSizeMbytes}" ] && echo "Variable GROW_SIZE_MBYTES is empty or not set." && exit 1
+expandRootfs=${EXPAND_ROOTFS} && [ -z "${expandRootfs}" ] && echo "Variable EXPAND_ROOTFS is empty or not set." && exit 1
+growSizeMbytes=${EXPAND_SIZE_MBYTES} && [ -z "${growSizeMbytes}" ] && echo "Variable EXPAND_SIZE_MBYTES is empty or not set." && exit 1
 
 zeroDev='/dev/zero'
 part1='/media/part1'
@@ -208,7 +208,7 @@ sync
 losetup -v -D
 sync
 
-if [ "${growImage}" -eq 1 ]; then
+if [ "${expandRootfs}" -eq 1 ]; then
 	dd status=progress if=${zeroDev} bs=1M count="${growSizeMbytes}" >> ${imgFile}
 
 	loopDev=$(losetup -f)

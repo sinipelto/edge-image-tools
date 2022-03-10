@@ -7,9 +7,16 @@ ssh azvm -C "rm -vrf repo && mkdir -vm 0755 repo" ; scp -r * azvm:repo/ ; ssh az
 
 
 
-Copy (image) scripts and run shellcheck on all image scripts (GIT BASH):
+Copy scripts and run TPM setup GIT BASH:
 
-ssh azvm -C "rm -vrf check && mkdir -vm 0755 check" && scp -r *image*.sh azvm:check/ && ssh azvm -C "cd check && shellcheck -a -x *image*.sh"
+ssh azvm -C "rm -vrf repo && mkdir -vm 0755 repo" && scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n' && cd repo && sudo chmod +x *.sh && sudo ./local-wrapper-tpm.sh"
+
+
+
+
+Copy all bash scripts and run shellcheck on all scripts (GIT BASH):
+
+ssh azvm -C "rm -vrf check && mkdir -vm 0755 check" && scp -r *.sh azvm:check/ && ssh azvm -C "cd check && shellcheck -a -x *.sh"
 
 
 

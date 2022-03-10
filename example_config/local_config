@@ -95,11 +95,27 @@ export IMAGE_SRC_URL='https://cdimage.ubuntu.com/releases/20.04/release/ubuntu-2
 
 # Expand the image root filesystem?
 # NOTE: RaspiOS has rootfs shrunk to 0% free space
-export GROW_IMAGE=1
+# Also note: this will affect the total size of the image file!
+export EXPAND_ROOTFS=1
 
 # How many megabytes the rootfs is expanded?
-# For raspios at least 1 gib recommended
-export GROW_SIZE_MBYTES=1024
+# For raspios at least 1 gbyte recommended
+export EXPAND_SIZE_MBYTES=1024
+
+# From the given expand size, how much should be allocate for the partition?
+# NOTE: There should be left some free unallocated space in case the rootfs minimum 
+# size will vary over different source images
+# The actual size of the will be e.g 80% of 1024 MBytes = with the example configuration
+export EXPAND_PERCENTAGE=80
+
+# Do we want to create a partition for persistent data onto the disk image?
+# It will be created into the end of the image (disk)
+export USE_PERSISTENCE=1
+
+# How many megabytes for the persistence partition at the end of the disk?
+# It should be large enough to hold all needed persistent configurations and data
+# The partition will be 100% of the allocated space, if 1024 defined, the size is 1024 mbytes.
+export PERSISTENCE_SIZE_MBYTES=1024
 
 # User name for the created user
 # Set to EMPTY string or remove the variable if the new user should NOT be created
@@ -141,3 +157,25 @@ export SMB_REMOTE_MOUNT_POINT='//<FILESHARE>.file.core.windows.net/<SHAREPATH>'
 # TODO FROM SECURE LOCATION!
 export SMB_USERNAME='<SMB_USERNAME>'
 export SMB_PASSWORD='<SMB_PASSWORD>'
+
+# All processes expect that a virtual software tpm solution is used
+# A TPM simulator is built and installed on the target image
+# The TPM Software stack will use tpm simulator driver instead of real one
+export USE_TPM_SIMULATOR=1
+
+# Do we pre-register the TPM information (Registration ID and Endorsement Key)
+# to the Azure DPS service? This will automate the registration process.
+# To do it manually, the registration info must be manually fetched from the image
+# and passed into the DPS service.
+export RUN_TPM_ATTESTATION=1
+
+export TPM_STATE_SRC="vtpm_state"
+
+export TPM_STATE_DEST="/persistence/vtpm"
+
+# Simulator or real device TCTI name to be used
+export TPM_NAME="swtpm"
+
+# ID scope to find the correct DPS in Azure
+# See Azure -> DPS instance -> Overview -> ID Scope for the correct value
+export DPS_ID_SCOPE="0ne00000000"
