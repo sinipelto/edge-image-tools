@@ -100,21 +100,22 @@ export EXPAND_ROOTFS=1
 
 # How many megabytes the rootfs is expanded?
 # For raspios at least 1 gbyte recommended
-export EXPAND_SIZE_MBYTES=1024
+export EXPAND_SIZE_MBYTES=1280
 
 # From the given expand size, how much should be allocate for the partition?
 # NOTE: There should be left some free unallocated space in case the rootfs minimum 
-# size will vary over different source images
-# The actual size of the will be e.g 80% of 1024 MBytes = with the example configuration
-export EXPAND_PERCENTAGE=80
+# size will vary over different source images (to allocate space for OTA device image updates)
+# The actual size of the will be e.g 70% of 1536 MBytes = 896 MBytes with the example configuration
+# There will be then 30% = 384 MBytes unallocated space after the partition
+export EXPAND_PERCENTAGE=70
 
 # Do we want to create a partition for persistent data onto the disk image?
-# It will be created into the end of the image (disk)
+# It will be created into the end of the disk image
 export USE_PERSISTENCE=1
 
 # How many megabytes for the persistence partition at the end of the disk?
 # It should be large enough to hold all needed persistent configurations and data
-# The partition will be 100% of the allocated space, if 1024 defined, the size is 1024 mbytes.
+# The partition will be 100% of the allocated space, if 1024 defined here, the size will be 1024 mbytes.
 export PERSISTENCE_SIZE_MBYTES=1024
 
 # User name for the created user
@@ -169,11 +170,22 @@ export USE_TPM_SIMULATOR=1
 # and passed into the DPS service.
 export RUN_TPM_ATTESTATION=1
 
-export TPM_STATE_SRC="vtpm_state"
+# Copy an existing tpm state directory from local dir into the image.
+# Copied from dir defined in TPM_STATE_SRC into a dir within image fs dir TPM_STATE_DEST.
+# Applies only if TPM simulator is used.
+#export COPY_VPM_STATE=1
 
+# E.g. a directory in repository containing the tpm statee files
+# Applies only if TPM simulator is used.
+#export TPM_STATE_SRC="vtpm_state"
+
+# E.g. a directory on the persistence partition (if enabled)
+# TPM state files are copied into this directory on the image
+# Applies only if TPM simulator is used.
 export TPM_STATE_DEST="/persistence/vtpm"
 
-# Simulator or real device TCTI name to be used
+# Simulator or real device TCTI driver name to be used
+# Should be swtpm for TPM simulator
 export TPM_NAME="swtpm"
 
 # ID scope to find the correct DPS in Azure
