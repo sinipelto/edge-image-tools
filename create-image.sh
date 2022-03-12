@@ -72,8 +72,9 @@ partInfoFile="${part2}/image_info"
 # License: MIT - Free/Commercial use + modifications
 waitforitScript="wait-for-it.sh"
 
-provisionScript="provision-image.sh"
-provisionService="provisioning.service"
+provisionScript='provision-image.sh'
+provisionService='provisioning.service'
+provisionServicePath="services/${provisionService}"
 
 resizeLine='s/ init=\/usr\/lib\/raspi-config\/init_resize.sh//g'
 
@@ -265,7 +266,7 @@ cp -v ${waitforitScript} ${rootBin}/
 cp -v ${provisionScript} ${rootBin}/
 chmod -vR 0700 ${rootBin}
 
-cp -v ${provisionService} ${systemdPath}/
+cp -v ${provisionServicePath} ${systemdPath}/
 
 [[ ${imgOs} == "ubuntu"* ]] && cp -v ${netplanFile} ${part2}/etc/netplan/
 
