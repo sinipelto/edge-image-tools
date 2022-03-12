@@ -129,6 +129,10 @@ aptPackages='coreutils bash grep util-linux curl fdisk zip unzip xz-utils binfmt
 # Get CPU thread count for multithreading params
 cpus=$(nproc)
 
+wSync() {
+	sync
+	sleep 2
+}
 
 #################
 ##### START #####
@@ -193,76 +197,57 @@ else
 #	[ "${localMode}" -eq 1 ] && cp -v ${imgFile} ${imgFile}.bak
 fi
 
-sync
+wSync
 umount -lfv ${part1} || true
 umount -lfv ${part2} || true
-sync
+wSync
 
-rm -rfv ${part1}
-rm -rfv ${part2}
+rm -vrf ${part1}
+rm -vrf ${part2}
 
-mkdir -pv ${part1}
-mkdir -pv ${part2}
+mkdir -vp ${part1}
+mkdir -vp ${part2}
 
-sync
 losetup -v -D
-sync
+wSync
 
 if [ "${expandRootfs}" -eq 1 ]; then
 	dd status=progress if=${zeroDev} bs=1M count="${growSizeMbytes}" >> ${imgFile}
+	wSync
 
 	loopDev=$(losetup -f)
 	losetup -v -f -P ${imgFile}
+	wSync
 
 	parted "${loopDev}" resizepart ${partRoot} 100%
-
-	sleep 1
-	sync
-	sleep 2
+	wSync
 
 	e2fsck -v -y -f "${loopDev}p${partRoot}"
-
-	sleep 1
-	sync
-	sleep 2
+	wSync
 
 	# No --verbose available
 	resize2fs "${loopDev}p${partRoot}"
-
-	sleep 1
-	sync
-	sleep 2
+	wSync
 
 	e2fsck -v -y -f "${loopDev}p${partRoot}"
-
-	sleep 1
-	sync
-	sleep 2
+	wSync
 
 	zerofree -v "${loopDev}p${partRoot}"
-
-	sleep 1
-	sync
-	sleep 2
+	wSync
 
 	losetup -v -d "${loopDev}"
-
-	sleep 1
-	sync
-	sleep 2
-
+	wSync
 	losetup -v -D
-
-	sleep 1
-	sync
-	sleep 2
+	wSync
 fi
 
 loopDev=$(losetup -f)
 losetup -v -f -P ${imgFile}
+wSync
 
 mount -v -t vfat -o rw "${loopDev}p${partBoot}" ${part1}
 mount -v -t ext4 -o rw "${loopDev}p${partRoot}" ${part2}
+wSync
 
 touch ${part1}/${sshFile}
 
@@ -361,22 +346,15 @@ fi
 
 [ ${preloadModified} -eq 1 ] && sed -i 's/^#//g' ${part2}/etc/ld.so.preload
 
-sleep 1
-sync
-sleep 2
+wSync
 umount -v ${part1}
 umount -v ${part2}
-sleep 1
-sync
-sleep 2
+wSync
+
 losetup -v -d "${loopDev}"
-sleep 1
-sync
-sleep 2
+wSync
 losetup -v -D
-sleep 1
-sync
-sleep 2
+wSync
 
 mv -v ${imgFile} "${newImgFile}"
 
