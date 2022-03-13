@@ -11,10 +11,10 @@ export DEV_MODE=1
 export LOCAL_MODE=1
 
 # Supported OS: raspbian, raspios, ubuntu18, ubuntu20
-export IMAGE_OS='raspios'
+export IMAGE_OS='ubuntu20'
 
 # For QEMU available archs: aarch64, arm, armeb, i386, x86_64
-export IMAGE_ARCH='arm'
+export IMAGE_ARCH='aarch64'
 
 # General file name for image versioning file
 # Needed to transfer the version between the scripts and cloud <-> device
@@ -57,15 +57,15 @@ export SAS_TOKEN_URL_QUERY='<SAS_TOKEN_URL_QUERY_PARAMS>'
 export DEV_EDGE_CONNECTION_STRING='HostName=<IOT_HUB_HOST_NAME>;DeviceId=<EDGE_DEVICE_ID>;SharedAccessKey=<EDGE_DEVICE_SYMMETRIC_KEY>'
 
 # Source image OS distribution information
-export DISTRO_NAME='Raspberry Pi OS Lite - Debian 11 (Bullseye) ARM32'
-export DISTRO_VERSION='Build: 2022-01-28'
+# export DISTRO_NAME='Raspberry Pi OS Lite - Debian 11 (Bullseye) ARM32'
+# export DISTRO_VERSION='Build: 2022-01-28'
 
-# export DISTRO_NAME='Ubuntu Server ARM64'
-# export DISTRO_VERSION='20.04.3 LTS'
+export DISTRO_NAME='Ubuntu Server ARM64'
+export DISTRO_VERSION='20.04.4 LTS'
 
 # Maintenance information
-export MAINT_NAME='Some Person'
-export MAINT_EMAIL='some.person@company.com'
+export MAINT_NAME='Some Maintainer'
+export MAINT_EMAIL='some.maintainer@company.com'
 
 # Source URL to download the original official image from
 
@@ -94,20 +94,29 @@ export MAINT_EMAIL='some.person@company.com'
 export IMAGE_SRC_URL='https://cdimage.ubuntu.com/releases/20.04/release/ubuntu-20.04.4-preinstalled-server-arm64+raspi.img.xz'
 
 # Expand the image root filesystem?
-# NOTE: RaspiOS has rootfs shrunk to 0% free space
-# Also note: this will affect the total size of the image file!
+# NOTE: RaspiOS has rootfs shrunk to 0% free space (100% of partition space used), thus expanding the partition is mandatory!
+# Also NOTE: this will affect the total size of the image file!
 export EXPAND_ROOTFS=1
 
-# How many megabytes the rootfs is expanded?
-# For raspios at least 1 gbyte recommended
-export EXPAND_SIZE_MBYTES=1280
+# How many megabytes the image is expanded (NOTE: for rootfs and unallocated space in total)?
+# For raspios at least ~1 gbyte (1024 mbytes) for free space is recommended
+# For Ubuntu based images, rootfs usually have free space already ~850 Mbytes (70% of the partition size) so not as much expansion is needed (e.g. 300 Mbytes)
 
-# From the given expand size, how much should be allocate for the partition?
+# For Raspbian/RaspiOS images
+# export EXPAND_SIZE_MBYTES=1280
+
+# For Ubuntu images
+export EXPAND_SIZE_MBYTES=512
+
+# From the given expand size, how much should be allocate for the partition and much left unallocated after?
 # NOTE: There should be left some free unallocated space in case the rootfs minimum 
 # size will vary over different source images (to allocate space for OTA device image updates)
-# The actual size of the will be e.g 70% of 1536 MBytes = 896 MBytes with the example configuration
-# There will be then 30% = 384 MBytes unallocated space after the partition
-export EXPAND_PERCENTAGE=70
+# NOTE: This percentage is relative to the whole disk size!
+# Thus, the effective allocated/unallocated ratio is unkown at this point (marked as X).
+# Change the value only if truly necssary to do so.
+# The actual size of the will be
+# e.g 90% of (X + 512 MBytes =) ~3800 MBytes (whole, expanded image) == ~3420MBytes, ~380 Mbytes left unallocated with the example configuration.
+export EXPAND_PERCENTAGE=93
 
 # Do we want to create a partition for persistent data onto the disk image?
 # It will be created into the end of the disk image
@@ -117,6 +126,10 @@ export USE_PERSISTENCE=1
 # It should be large enough to hold all needed persistent configurations and data
 # The partition will be 100% of the allocated space, if 1024 defined here, the size will be 1024 mbytes.
 export PERSISTENCE_SIZE_MBYTES=1024
+
+# In which location the persistence partition will be mounted on during boot
+# This location will be configured in the /etc/fstab file.
+export PERSISTENCE_MOUNT_POINT='/persistence'
 
 # User name for the created user
 # Set to EMPTY string or remove the variable if the new user should NOT be created
@@ -170,24 +183,14 @@ export USE_TPM_SIMULATOR=1
 # and passed into the DPS service.
 export RUN_TPM_ATTESTATION=1
 
-# Copy an existing tpm state directory from local dir into the image.
-# Copied from dir defined in TPM_STATE_SRC into a dir within image fs dir TPM_STATE_DEST.
-# Applies only if TPM simulator is used.
-#export COPY_VPM_STATE=1
-
-# E.g. a directory in repository containing the tpm statee files
-# Applies only if TPM simulator is used.
-#export TPM_STATE_SRC="vtpm_state"
-
 # E.g. a directory on the persistence partition (if enabled)
-# TPM state files are copied into this directory on the image
+# TPM state files are created into this directory on the image
 # Applies only if TPM simulator is used.
-export TPM_STATE_DEST="/persistence/vtpm"
-
-# Simulator or real device TCTI driver name to be used
-# Should be swtpm for TPM simulator
-export TPM_NAME="swtpm"
+# Recommended location is somewhere on the persistence partition (IF SUCH IS CREATED).
+# Check PERSISTENCE_MOUNT_POINT setting for the correct persistence partition mount point.
+# to ensure the tpm state is not overridden/erased during an OTA image update process.
+export TPM_STATE_DEST='/persistence/vtpm'
 
 # ID scope to find the correct DPS in Azure
 # See Azure -> DPS instance -> Overview -> ID Scope for the correct value
-export DPS_ID_SCOPE="0ne00000000"
+export DPS_ID_SCOPE='0ne00000000'

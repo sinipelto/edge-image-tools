@@ -12,7 +12,7 @@ source config/local_config
 bashBin='/bin/bash'
 
 # Scripts to execute in this local wrapper
-scripts=("${PWD}/tpm-simulator-setup.sh" "${PWD}/tpm-attestation-setup.sh")
+scripts=("${PWD}/tpm-device-setup.sh" "${PWD}/tpm-attestation-setup.sh")
 
 
 ################################################################################
