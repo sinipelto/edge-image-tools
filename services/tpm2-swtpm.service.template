@@ -1,0 +1,11 @@
+[Unit]
+Description=TPM2 Simulator swtpm as socket device
+
+[Service]
+Type=simple
+User=root
+RestartSec=5
+ExecStart=/usr/bin/swtpm socket --server type=tcp,port=2321,disconnect --ctrl type=tcp,port=2322 --tpmstate dir=<TPM_STATE_DIR> --tpm2 --flags not-need-init,startup-clear --runas 0
+
+[Install]
+WantedBy=multi-user.target
