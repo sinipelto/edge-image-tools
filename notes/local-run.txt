@@ -1,13 +1,13 @@
 Expect: PWD == repoDir
 
-Full run create & publish image over SSH on Linux target (PowerShell):
+Full run create & publish image over SSH on Linux target PowerShell:
 
-ssh azvm -C "sudo rm -vrf repo && mkdir -vm 0755 repo" ; scp -r * azvm:repo/ ; ssh azvm -C "echo -e '\n\n' && cd repo && sudo chmod +x *.sh && sudo ./local-wrapper-image.sh"
-
-
+ssh azvm -C "sudo rm -vrf repo && mkdir -vm 0755 repo" ; scp -r * azvm:repo/ ; ssh azvm -C "echo -e '\n\n\n' && cd repo && sudo chmod +x *.sh && sudo ./local-wrapper-image.sh"
 
 
-Copy all bash scripts and run shellcheck on all scripts (GIT BASH):
+
+
+Copy all bash scripts and run shellcheck on all scripts GIT BASH:
 
 ssh azvm -C "sudo rm -vrf check && mkdir -vm 0755 check" && scp -r *.sh azvm:check/ && ssh azvm -C "cd check && sudo rm -vf wait-for-it.sh largefiles.sh && shellcheck -x *.sh"
 
@@ -16,35 +16,40 @@ ssh azvm -C "sudo rm -vrf check && mkdir -vm 0755 check" && scp -r *.sh azvm:che
 
 Copy and run TPM simulator setup script GIT BASH:
 
-ssh azvm -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n' && cd repo && sudo chmod +x *.sh && sudo ./tpm-simulator-setup.sh"
+ssh azvm -C "sudo rm -vrf simulator && mkdir -vm 0755 simulator" && scp -r * azvm:simulator/ && ssh azvm -C "echo -e '\n\n\n' && cd simulator && sudo chmod +x *.sh && sudo ./tpm-device-setup.sh"
 
 
 Copy and run TPM attestation script GIT BASH:
 
-ssh azvm -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n' && cd repo && sudo chmod +x *.sh && sudo ./tpm-attestation-setup.sh"
+ssh azvm -C "sudo rm -vrf attestation && mkdir -vm 0755 attestation" && scp -r * azvm:attestation/ && ssh azvm -C "echo -e '\n\n\n' && cd attestation && sudo chmod +x *.sh && sudo ./tpm-attestation-setup.sh"
 
 
 Copy scripts and run TPM setup + attestation GIT BASH:
 
-ssh azvm -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n' && cd repo && sudo chmod +x *.sh && sudo ./local-wrapper-tpm.sh"
+ssh azvm -C "sudo rm -vrf tpmsetup && mkdir -vm 0755 tpmsetup" && scp -r * azvm:tpmsetup/ && ssh azvm -C "echo -e '\n\n\n' && cd tpmsetup && sudo chmod +x *.sh && sudo ./local-wrapper-tpm.sh"
 
 
 
 
-Full run create image and publish to azure (GIT BASH):
+Full run create image and publish to azure GIT BASH:
 
-ssh azvm -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n' && cd repo && sudo chmod +x *.sh && sudo ./local-wrapper-image.sh"
-
-
+ssh azvm -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n\n' && cd repo && sudo chmod +x *.sh && sudo ./local-wrapper-image.sh"
 
 
-Full run + flash the image on /dev/sdd once done, skip device prompt DANGER!!! (GIT BASH):
+On background GIT BASH:
 
-ssh azvm -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n' && cd repo && sudo chmod +x *.sh && sudo ./local-wrapper-image.sh" && echo -e '\n\n' && sleep 10 && echo 'y' | ./flash-image.sh /dev/sdd
+ssh azvm -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * azvm:repo/ && ssh azvm -t -C "echo -e '\n\n\n' && cd repo && sudo chmod +x *.sh && sudo nohup ./local-wrapper-image.sh & sleep 2"
 
 
 
 
-Flash /dev/sdd only and prompt (GIT BASH):
+Full run + flash the image on /dev/sdd once done, skip device prompt DANGER!!! GIT BASH:
+
+ssh azvm -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n\n' && cd repo && sudo chmod +x *.sh && sudo ./local-wrapper-image.sh" && echo -e '\n\n\n' && sleep 10 && echo 'y' | ./flash-image.sh /dev/sdd
+
+
+
+
+Flash /dev/sdd only and prompt GIT BASH:
 
 ./flash-image.sh /dev/sdd
