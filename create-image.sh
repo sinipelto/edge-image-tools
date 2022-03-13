@@ -53,24 +53,35 @@ newImgFileZip="${newImgFile}.xz"
 
 expandRootfs=${EXPAND_ROOTFS} && [ -z "${expandRootfs}" ] && echo "Variable EXPAND_ROOTFS is empty or not set." && exit 1
 growSizeMbytes=${EXPAND_SIZE_MBYTES} && [ -z "${growSizeMbytes}" ] && echo "Variable EXPAND_SIZE_MBYTES is empty or not set." && exit 1
+growPercentage=${EXPAND_PERCENTAGE} && [ -z "${growPercentage}" ] && echo "Variable EXPAND_PERCENTAGE is empty or not set." && exit 1
+
+createPersistence=${USE_PERSISTENCE} && [ -z "${createPersistence}" ] && echo "Variable USE_PERSISTENCE is empty or not set." && exit 1
+persistenceSize=${PERSISTENCE_SIZE_MBYTES} && [ -z "${persistenceSize}" ] && echo "Variable PERSISTENCE_SIZE_MBYTES is empty or not set." && exit 1
 
 zeroDev='/dev/zero'
-part1='/media/part1'
-part2='/media/part2'
 
-partBoot=1
-partRoot=2
+part1='/media/boot' # Boot
+part2='/media/root' # Rootfs
+part3='/media/persistence' # Persistence
+
+partNumBoot=1
+partNumRoot=2
+partNumPersist=3
 
 qemuBin="qemu-${imgArch}-static"
-bashBin="/bin/bash"
+bashBin='/bin/bash'
 
 rootBin="${part2}/root/bin"
+
+persistencePath="${part2}/persistence"
 
 partParamsFile="${part2}/${imgParamsFile}"
 partInfoFile="${part2}/image_info"
 
+tpmDeviceSetupScript='tpm-device-setup.sh'
+
 # License: MIT - Free/Commercial use + modifications
-waitforitScript="wait-for-it.sh"
+waitforitScript='wait-for-it.sh'
 
 provisionScript='provision-image.sh'
 provisionService='provisioning.service'
@@ -124,6 +135,8 @@ authFile="${sshPath}/authorized_keys"
 
 partSshPath="${part2}${sshPath}"
 partAuthFile="${part2}${authFile}"
+
+tpmStateDest=${TPM_STATE_DEST?:"Variable TPM_STATE_DEST is empty or not set."}
 
 aptPackages='coreutils bash grep util-linux curl fdisk zip unzip xz-utils binfmt-support qemu-user-static'
 
@@ -192,27 +205,32 @@ if [ "${devMode}" -eq 1 ] && [ "${localMode}" -eq 1 ] && [ -f "${imgFileBak}" ];
 else
 	rm -fv ${imgFileZip}
 	curl -f -L -o ${imgFileZip} "${srcUrl}"
-	[[ ${srcFileExt} == "xz" ]] && unxz -vv -d -k -T "${cpus}" ${imgFileZip}
+	[ "${localMode}" -eq 1 ] && keepArchive='-k' || keepArchive=''
+	[[ ${srcFileExt} == "xz" ]] && unxz -vv -d "${keepArchive}" -T "${cpus}" ${imgFileZip}
 	[[ ${srcFileExt} == "zip" ]] && unzip -o ${imgFileZip}
 	mv -v ./*.img ${imgFile} || true
-#	[ "${localMode}" -eq 1 ] && cp -v ${imgFile} ${imgFile}.bak
+#	[ "${devMode}" -eq 1 ] && [ "${localMode}" -eq 1 ] && cp -v ${imgFile} ${imgFile}.bak
 fi
 
 wSync
 umount -lfv ${part1} || true
 umount -lfv ${part2} || true
+umount -lfv ${part3} || true
 wSync
 
 rm -vrf ${part1}
 rm -vrf ${part2}
+rm -vrf ${part3}
 
 mkdir -vp ${part1}
 mkdir -vp ${part2}
+mkdir -vp ${part3}
 
 losetup -v -D
 wSync
 
 if [ "${expandRootfs}" -eq 1 ]; then
+	# EXPAND ROOTFS PARTITION
 	dd status=progress if=${zeroDev} bs=1M count="${growSizeMbytes}" >> ${imgFile}
 	wSync
 
@@ -220,20 +238,44 @@ if [ "${expandRootfs}" -eq 1 ]; then
 	losetup -v -f -P ${imgFile}
 	wSync
 
-	parted "${loopDev}" resizepart ${partRoot} 100%
+	# shellcheck disable=SC2086
+	parted -s -a opt "${loopDev}" resizepart ${partNumRoot} ${growPercentage}%
 	wSync
 
-	e2fsck -v -y -f "${loopDev}p${partRoot}"
+	e2fsck -v -y -f "${loopDev}p${partNumRoot}"
 	wSync
 
 	# No --verbose available
-	resize2fs "${loopDev}p${partRoot}"
+	resize2fs "${loopDev}p${partNumRoot}"
 	wSync
 
-	e2fsck -v -y -f "${loopDev}p${partRoot}"
+	e2fsck -v -y -f "${loopDev}p${partNumRoot}"
 	wSync
 
-	zerofree -v "${loopDev}p${partRoot}"
+	losetup -v -d "${loopDev}"
+	wSync
+	losetup -v -D
+	wSync
+fi
+
+if [ "${createPersistence}" -eq 1 ]; then
+	# CREATE PERSISTENCE PARTITION
+	ogSectors=$(blockdev --getsz ${imgFile})
+
+	dd status=progress if=${zeroDev} bs=1M count="${persistenceSize}" >> ${imgFile}
+	wSync
+
+	loopDev=$(losetup -f)
+	losetup -v -f -P ${imgFile}
+	wSync
+
+	parted -s -a opt "${loopDev}" mkpart primary ext4 "${ogSectors}"s 100%
+	wSync
+
+	mkfs.ext4 "${loopDev}p${partNumPersist}"
+	wSync
+
+	e2fsck -v -y -f "${loopDev}p${partNumPersist}"
 	wSync
 
 	losetup -v -d "${loopDev}"
@@ -246,8 +288,14 @@ loopDev=$(losetup -f)
 losetup -v -f -P ${imgFile}
 wSync
 
-mount -v -t vfat -o rw "${loopDev}p${partBoot}" ${part1}
-mount -v -t ext4 -o rw "${loopDev}p${partRoot}" ${part2}
+mount -v -t vfat -o rw "${loopDev}p${partNumBoot}" ${part1}
+mount -v -t ext4 -o rw "${loopDev}p${partNumRoot}" ${part2}
+mount -v -t ext4 -o rw "${loopDev}p${partNumPersist}" ${part3}
+wSync
+
+# Mount persistence partition inside rootfs partition for chroot manipulation
+mkdir ${persistencePath}
+mount -v -t ext4 -o rw "${loopDev}p${partNumPersist}" ${persistencePath}
 wSync
 
 touch ${part1}/${sshFile}
@@ -277,7 +325,7 @@ export IMAGE_ARCH='${imgArch}'
 export IMAGE_VER_FILE='${imgVerFile}'
 export IMAGE_SERVER_URL='${imgServer}'
 export SAS_TOKEN_URL_QUERY='${sasToken}'
-export DEV_EDGE_CONNECTION_STRING='${DEV_EDGE_CONNECTION_STRING}'
+export DPS_ID_SCOPE='${DPS_ID_SCOPE}'
 EOF
 chmod -v 0444 "${partParamsFile}"
 
@@ -296,9 +344,27 @@ EOF
 chmod -v 0440 "${sudoersFile}"
 fi
 
+${bashBin} ${tpmDeviceSetupScript} ${part2}
+
 cp -v "$(which "${qemuBin}")" ${part2}/usr/bin/
 
 sed -i 's/^/#/g' ${part2}/etc/ld.so.preload && preloadModified=1 || preloadModified=0
+
+chroot ${part2} "${qemuBin}" ${bashBin} -vc "rm -vrf ${tpmStateDest}"
+chroot ${part2} "${qemuBin}" ${bashBin} -vc "mkdir -vm 0700 ${tpmStateDest}"
+
+chroot ${part2} "${qemuBin}" ${bashBin} -vc "swtpm_setup \
+	--runas 0 \
+	--tpmstate ${tpmStateDest} \
+	--tpm2 \
+	--createek \
+	--decryption \
+	--create-ek-cert \
+	--create-platform-cert \
+	--lock-nvram \
+	--not-overwrite \
+	--display \
+	--vmid iotedge-base-image"
 
 chroot ${part2} "${qemuBin}" ${bashBin} -vc "systemctl enable ${provisionService}"
 
@@ -350,7 +416,12 @@ fi
 wSync
 umount -v ${part1}
 umount -v ${part2}
+umount -v ${part3}
 wSync
+
+rm -vrf ${part1}
+rm -vrf ${part2}
+rm -vrf ${part3}
 
 losetup -v -d "${loopDev}"
 wSync
