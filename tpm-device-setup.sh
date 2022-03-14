@@ -10,12 +10,6 @@ commonBin='common.sh'
 # shellcheck source=/dev/null
 source ${commonBin}
 
-# Stored state dir for restoring backed up vTPM state
-tpmStateDest=${TPM_STATE_DEST:?"Variable TPM_STATE_DEST is empty or not set."}
-
-# TPM software simulator or a real tpm device? 
-useTpmSim=${USE_TPM_SIMULATOR:?"Variable USE_TPM_SIMULATOR is empty or not set."}
-
 imgArch=${IMAGE_ARCH:?"Variable IMAGE_ARCH is empty or not set."}
 
 pathPrefix=${1:-''}
@@ -44,12 +38,6 @@ repoVersion4='2.4.1'
 repoUrl4="https://github.com/tpm2-software/${repoName4}.git"
 
 requiredPkgs='git build-essential curl autoconf autoconf-archive libcmocka0 libcmocka-dev procps libcurl4-openssl-dev libssl-dev uuid-dev uthash-dev doxygen libltdl-dev libseccomp-dev libgnutls28-dev ca-certificates automake bash coreutils dh-autoreconf libtasn1-6-dev net-tools iproute2 libjson-c-dev libjson-glib-dev libini-config-dev expect libtool sed devscripts equivs gcc dh-exec pkg-config gawk make socat softhsm gnutls-bin glib-2.0 gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu'
-
-abrmdServiceSim='tpm2-abrmd-swtpm.service'
-abrmdServiceSimPath="services/${abrmdServiceSim}"
-
-swtpmService='tpm2-swtpm.service'
-swtpmServicePath="services/${swtpmService}.template"
 
 # Get CPU thread count for multithreading params
 cpus=$(nproc)
@@ -134,19 +122,5 @@ echo "Build & Install tpm2-abrmd done"
 # pkill -HUP dbus-daemon
 # systemctl daemon-reload
 # sleep 1
-
-tpmStateDest=$(echo "${tpmStateDest}" | sed 's/\//\\\//g')
-sed -i "s/<TPM_STATE_DIR>/${tpmStateDest}/" ${swtpmServicePath}
-cp -v ${swtpmServicePath} "${systemdDir}/${swtpmService}"
-echo "Set up systemd service for swtpm"
-
-if [ "${useTpmSim}" -eq 1 ]; then
-	echo "Using systemd service for TPM simulator.."
-	cp -v ${abrmdServiceSimPath} "${systemdDir}/${abrmdServiceSim}"
-else
-	echo "Using systemd service for real TPM device.."
-	# NOTE 2022-03-13: No real device configuration available yet due to lack of real hardware
-fi
-echo "Set up systemd service for tpm2-abrmd"
 
 echo "tpm-device-setup.sh DONE"
