@@ -2,7 +2,7 @@ auto_reprovisioning_mode = "OnErrorOnly"
 
 [provisioning]
 souce = "dps"
-global_endpoint = "<DPS_GLOBAL_ENDPOINT>"
+global_endpoint = "https://global.azure-devices-provisioning.net"
 id_scope = "<DPS_ID_SCOPE>"
 
 [provisioning.attestation]
