@@ -6,8 +6,11 @@ userId=$(id -u)
 
 paramsFile='/image_params'
 
-waitBin='/root/bin/wait-for-it.sh'
-commonBin='/root/bin/common.sh'
+bashBin='/bin/bash'
+rootBin='/root/bin'
+waitBin="${rootBin}/wait-for-it.sh"
+commonBin="${rootBin}/common.sh"
+attestationBin="${rootBin}/tpm-attestation-setup.sh"
 
 sleepBin='/bin/sleep'
 shutdownBin='/sbin/shutdown'
@@ -135,11 +138,9 @@ configure_edge() {
 
 	echo "Fetch provisioning information.."
 
-	# TODO! Use real DPS service ? generate secret, request provision data how??
-	connStr=${devConnStr}
+	${bashBin} ${attestationBin}
 
-	echo "Set iot edge device connection string.."
-	iotedge config mp --force --connection-string "${connStr}"
+	# TODO sed config toml
 
 	echo "Apply iot edge config.."
 	iotedge config apply
@@ -226,20 +227,6 @@ check_updates() {
 	echo "Check updates done."
 }
 
-setup_persistence() {
-	echo "Starting to setup persistence partition.."
-
-	# TODO: create new partition to pstart=end-4M pend=end-1
-	#	format partition ext4
-	#	add mount entry to mount partition at boot
-
-	# echo "Write persistence partition info."
-	# shellcheck disable=SC2059
-	# echo -e "${persistenceText}" > ${persistenceFile}
-
-	echo "Persistence partition setup done."
-}
-
 
 #################
 ##### START #####
@@ -249,13 +236,6 @@ isUpdate=0
 doReboot=0
 
 echo "[${dateTime}] - Provisioning and update script starting up.."
-
-# TODO
-# if [ -f "${persistenceFile}" ]; then
-# 	echo "Persistence partition already exists. Skip persistence partition setup."
-# else
-# 	setup_persistence
-# fi
 
 check_updates
 
