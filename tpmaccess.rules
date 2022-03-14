@@ -1,3 +1,0 @@
-# allow aziottpm access to tpm0 and tpmrm0
-KERNEL=="tpm0", SUBSYSTEM=="tpm", OWNER="aziottpm", MODE="0660"
-KERNEL=="tpmrm0", SUBSYSTEM=="tpmrm", OWNER="aziottpm", MODE="0660"
