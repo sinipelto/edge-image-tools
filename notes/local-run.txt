@@ -36,6 +36,11 @@ Full run create image and publish to azure GIT BASH:
 ssh azvm -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n\n' && cd repo && sudo chmod +x *.sh && sudo ./local-wrapper-image.sh"
 
 
+Copy without deleting old - replace only existing GIT BASH:
+
+scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n\n' && cd repo && sudo chmod +x *.sh && sudo ./local-wrapper-image.sh"
+
+
 On background GIT BASH:
 
 ssh azvm -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * azvm:repo/ && ssh azvm -t -C "echo -e '\n\n\n' && cd repo && sudo chmod +x *.sh && sudo nohup ./local-wrapper-image.sh & sleep 2"
