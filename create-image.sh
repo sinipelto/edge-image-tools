@@ -57,6 +57,7 @@ growPercentage=${EXPAND_PERCENTAGE} && [ -z "${growPercentage}" ] && echo "Varia
 
 createPersistence=${USE_PERSISTENCE} && [ -z "${createPersistence}" ] && echo "Variable USE_PERSISTENCE is empty or not set." && exit 1
 persistenceSize=${PERSISTENCE_SIZE_MBYTES} && [ -z "${persistenceSize}" ] && echo "Variable PERSISTENCE_SIZE_MBYTES is empty or not set." && exit 1
+persistenceMount=${PERSISTENCE_MOUNT_POINT:?"Variable PERSISTENCE_MOUNT_POINT is empty or not set."}
 
 zeroDev='/dev/zero'
 
@@ -79,6 +80,7 @@ partParamsFile="${part2}/${imgParamsFile}"
 partInfoFile="${part2}/image_info"
 
 tpmDeviceSetupScript='tpm-device-setup.sh'
+tpmAttestationSetupScript='tpm-attestation-setup.sh'
 
 # License: MIT - Free/Commercial use + modifications
 waitforitScript='wait-for-it.sh'
@@ -89,7 +91,7 @@ provisionServicePath="services/${provisionService}"
 
 resizeLine='s/ init=\/usr\/lib\/raspi-config\/init_resize.sh//g'
 
-systemdPath="${part2}/lib/systemd/system/"
+systemdPath="${part2}/lib/systemd/system"
 
 assetPath='image_files'
 
@@ -136,7 +138,17 @@ authFile="${sshPath}/authorized_keys"
 partSshPath="${part2}${sshPath}"
 partAuthFile="${part2}${authFile}"
 
-tpmStateDest=${TPM_STATE_DEST?:"Variable TPM_STATE_DEST is empty or not set."}
+# Stored state dir for restoring backed up vTPM state
+tpmStateDest=${TPM_STATE_DEST:?"Variable TPM_STATE_DEST is empty or not set."}
+
+# TPM software simulator or a real tpm device? 
+useTpmSim=${USE_TPM_SIMULATOR:?"Variable USE_TPM_SIMULATOR is empty or not set."}
+
+abrmdServiceSim='tpm2-abrmd-swtpm.service'
+abrmdServiceSimPath="services/${abrmdServiceSim}"
+
+swtpmService='tpm2-swtpm.service'
+swtpmServicePath="services/${swtpmService}.template"
 
 aptPackages='coreutils bash grep util-linux curl fdisk zip unzip xz-utils binfmt-support qemu-user-static'
 
@@ -298,6 +310,10 @@ mkdir ${persistencePath}
 mount -v -t ext4 -o rw "${loopDev}p${partNumPersist}" ${persistencePath}
 wSync
 
+# Add auto mount entry to rootfs partition table
+partUuid="UUID=$(blkid "${loopDev}p${partNumPersist}" -s UUID -o value)"
+echo -e "${partUuid}\t${persistenceMount}\text4\tdefaults\t0\t2" >> ${part2}/etc/fstab
+
 touch ${part1}/${sshFile}
 
 cp -v ${wpaFile} ${part1}/
@@ -312,6 +328,7 @@ sed -i "${resizeLine}" ${cmdlineFile}
 cp -v ${commonScript} ${rootBin}/
 cp -v ${waitforitScript} ${rootBin}/
 cp -v ${provisionScript} ${rootBin}/
+cp -v ${tpmAttestationSetupScript} ${rootBin}/
 chmod -vR 0700 ${rootBin}
 
 cp -v ${provisionServicePath} ${systemdPath}/
@@ -325,6 +342,7 @@ export IMAGE_ARCH='${imgArch}'
 export IMAGE_VER_FILE='${imgVerFile}'
 export IMAGE_SERVER_URL='${imgServer}'
 export SAS_TOKEN_URL_QUERY='${sasToken}'
+export PERSISTENCE_MOUNT_POINT='${PERSISTENCE_MOUNT_POINT}'
 export DPS_ID_SCOPE='${DPS_ID_SCOPE}'
 EOF
 chmod -v 0444 "${partParamsFile}"
@@ -346,11 +364,33 @@ fi
 
 ${bashBin} ${tpmDeviceSetupScript} ${part2}
 
-cp -v "$(which "${qemuBin}")" ${part2}/usr/bin/
+tpmStateDest=$(echo "${tpmStateDest}" | sed 's/\//\\\//g')
+sed -i "s/<TPM_STATE_DIR>/${tpmStateDest}/" ${swtpmServicePath}
+cp -v ${swtpmServicePath} "${systemdPath}/${swtpmService}"
 
+echo "Set up systemd service for swtpm"
+
+if [ "${useTpmSim}" -eq 1 ]; then
+	echo "Using systemd service for TPM simulator.."
+	cp -v ${abrmdServiceSimPath} "${systemdPath}/${abrmdServiceSim}"
+else
+	echo "Using systemd service for real TPM device.."
+	# NOTE 2022-03-13: No real device configuration available yet due to lack of real hardware
+fi
+
+echo "Set up systemd service for tpm2-abrmd"
+
+# TODO azuresdkc cmake?
+
+cp -v "$(which "${qemuBin}")" ${part2}/usr/bin/
 sed -i 's/^/#/g' ${part2}/etc/ld.so.preload && preloadModified=1 || preloadModified=0
 
+chroot ${part2} "${qemuBin}" ${bashBin} -vc "systemctl enable ${swtpmService}"
+
+chroot ${part2} "${qemuBin}" ${bashBin} -vc "systemctl enable ${abrmdServiceSim}"
+
 chroot ${part2} "${qemuBin}" ${bashBin} -vc "rm -vrf ${tpmStateDest}"
+
 chroot ${part2} "${qemuBin}" ${bashBin} -vc "mkdir -vm 0700 ${tpmStateDest}"
 
 chroot ${part2} "${qemuBin}" ${bashBin} -vc "swtpm_setup \
@@ -365,6 +405,19 @@ chroot ${part2} "${qemuBin}" ${bashBin} -vc "swtpm_setup \
 	--not-overwrite \
 	--display \
 	--vmid iotedge-base-image"
+
+chroot ${part2} "${qemuBin}" ${bashBin} -vc "swtpm socket \
+	--runas 0 \
+	--tpmstate dir=${tpmStateDest} \
+	--tpm2 \
+	--server type=tcp,port2321,disconnect \
+	--ctrl type=tcp,port2322 \
+	--flags not-need-init,startup-clear \
+	&"
+
+chroot ${part2} "${qemuBin}" ${bashBin} -vc "tpm2-abrmd -o -t 'swtpm' &"
+
+chroot ${part2} "${qemuBin}" ${bashBin} -vc "/PATH/TO/TPM_PROVISION"
 
 chroot ${part2} "${qemuBin}" ${bashBin} -vc "systemctl enable ${provisionService}"
 
@@ -412,6 +465,10 @@ chroot ${part2} "${qemuBin}" ${bashBin} -vc "chmod -v 0644 ${authFile}"
 fi
 
 [ ${preloadModified} -eq 1 ] && sed -i 's/^#//g' ${part2}/etc/ld.so.preload
+
+wSync
+umount -v ${persistencePath}
+wSync
 
 wSync
 umount -v ${part1}
