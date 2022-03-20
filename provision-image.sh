@@ -39,20 +39,16 @@ dateTime=$(${dateBin})
 #isoDate=$(${dateBin} '+%Y-%m-%dT%H:%M:%S')
 
 # Timeout before rebooting
-rebootSec=10
+rebootMin=1
+
 # Timeout for the very first boot before taking any actions
 syncTimeout=20
 
 initUserRaspi='pi'
 initUserUbuntu='ubuntu'
 
-#persistenceFile='/persistence/.info'
 provFile='/root/.provisioned'
-
 provText="Pre-Built IoT Edge Image\nImage Version: ${version}\nDevice Provision Date: ${dateTime}"
-#persistenceText="Persistence partition created with image version: ${version}\nPersistence partition Creation Date: ${dateTime}"
-
-devConnStr=${DEV_EDGE_CONNECTION_STRING}
 
 ensure_apt() {
 	echo "Ensure connection to APT required services available.."
@@ -161,9 +157,6 @@ configure_edge() {
 provision() {
 	echo "First boot - Start initial provisioning.."
 
-	echo "Wait for a while to allow the clock to synchronize.."
-	${sleepBin} ${syncTimeout}
-
 	base_config
 	config_sources
 	install_deps
@@ -228,14 +221,27 @@ check_updates() {
 }
 
 
-#################
-##### START #####
-#################
+################################################################################
+################################	START	####################################
+################################################################################
 
 isUpdate=0
 doReboot=0
 
 echo "[${dateTime}] - Provisioning and update script starting up.."
+
+if [ ! -f "${provFile}" ]; then
+	echo "First boot detected."
+
+	echo "Ensure system clock is synced.."
+	systemctl restart systemd-timesyncd.service
+
+	echo "Wait for a while to allow the clock to synchronize.."
+	${sleepBin} ${syncTimeout}
+
+	echo "Ensure aptitude available.."
+	waitAptitude
+fi
 
 check_updates
 
@@ -245,6 +251,6 @@ else
 	[ ${isUpdate} -eq 0 ] && provision
 fi
 
-[ ${doReboot} -eq 1 ] && echo "Reboot requested." && echo "Reboot in ${rebootSec}..." && ${sleepBin} ${rebootSec} && ${shutdownBin} -r now
+[ ${doReboot} -eq 1 ] && echo "Reboot requested." && echo "Reboot in ${rebootMin} min..." && ${shutdownBin} -r +${rebootMin}
 
 echo "[${dateTime}] - Provisioning and update script finished."

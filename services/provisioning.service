@@ -8,10 +8,9 @@ After=time-sync.target
 [Service]
 Type=simple
 User=root
-TimeoutStartSec=610
 Restart=always
-RestartSec=3600
-ExecStartPre=/usr/bin/env /bin/bash /root/bin/wait-for-it.sh -t 600 -h management.azure.com -p 443
+RestartSec=300
+ExecStartPre=/usr/bin/env /bin/bash /root/bin/wait-for-it.sh -t 300 -h management.azure.com -p 443
 ExecStart=/usr/bin/env /bin/bash /root/bin/provision-image.sh
 
 [Install]
