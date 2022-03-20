@@ -19,13 +19,21 @@ waitAptitude() {
 	return 0
 }
 
+installPackage() {
+	local pkg=${1}
+
+	apt-get install -y "${pkg}"
+
+	return 0
+}
+
 installPackages() {
-	local packages=${1}
+	local pkgs=${1}
 
 	apt-get update
 
 	# shellcheck disable=SC2068
-	apt-get install -y ${packages[@]}
+	apt-get install -y ${pkgs[@]}
 
 	return 0
 }
