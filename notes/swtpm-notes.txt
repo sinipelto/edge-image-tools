@@ -1,10 +1,10 @@
-requiredPkgs='git cmake build-essential curl libcurl4-openssl-dev libssl-dev uuid-dev libseccomp-dev libgnutls28-dev ca-certificates automake autoconf bash coreutils dh-autoreconf libtasn1-6-dev net-tools iproute2 libjson-glib-dev expect libtool sed devscripts equivs gcc dh-exec pkg-config gawk make socat'
+requiredPkgs='git cmake build-essential curl libcurl4-openssl-dev libssl-dev uuid-dev libseccomp-dev libgnutls28-dev ca-certificates automake autoconf bash coreutils dh-autoreconf libtasn1-6-dev net-tools iproute2 libjson-glib-dev expect libtool sed devscripts equivs gcc dh-exec pkgconf gawk make socat'
 
 
-sudo apt-get -y install automake autoconf libtool gcc build-essential libssl-dev dh-exec pkg-config dh-autoreconf
+sudo apt-get -y install automake autoconf libtool gcc build-essential libssl-dev dh-exec pkgconf dh-autoreconf
 
 sudo apt-get install dh-autoreconf libssl-dev \
-     libtasn1-6-dev pkg-config \
+     libtasn1-6-dev pkgconf \
      net-tools iproute2 libjson-glib-dev \
      libgnutls28-dev expect gawk socat \
      libseccomp-dev make -y
