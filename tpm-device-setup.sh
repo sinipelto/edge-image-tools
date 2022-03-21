@@ -1,25 +1,46 @@
 #!/bin/bash
-set -e
+set -ex
 
 userId=$(id -u)
 (( userId != 0 )) && echo "Current user not root. This script must be run as root user or with sudo privileges." && exit 1
 
+paramsFile='/image_params'
+
+bashBin='/bin/bash'
+rootBin='/root/bin'
+
+waitBin='wait-for-it.sh'
 commonBin='common.sh'
-# waitBin='wait-for-it.sh'
+
+# waitBin="${rootBin}/wait-for-it.sh"
+# commonBin="${rootBin}/common.sh"
 
 # shellcheck source=/dev/null
 source ${commonBin}
 
+# Read image params variables from file
+# shellcheck source=/dev/null
+# source ${paramsFile}
+
+imgOs=${IMAGE_OS:?"Variable IMAGE_OS is empty or not set."}
 imgArch=${IMAGE_ARCH:?"Variable IMAGE_ARCH is empty or not set."}
 
-pathPrefix=${1:-''}
+pkgName='tpm-bundle'
+pkgArchive="${pkgName}.tar.gz"
+buildDest="/root/${pkgName}"
 
-buildPrefix="${pathPrefix}/usr"
-dbusDir="${pathPrefix}/etc/dbus-1/system.d"
-udevDir="${pathPrefix}/etc/udev/rules.d"
-systemdDir="${pathPrefix}/lib/systemd/system"
-systemdPresetDir="${pathPrefix}/lib/systemd/system-preset"
-dataRootDir="${pathPrefix}/usr/share"
+sysrootPath=${1:-''}
+
+# 0 = local compile (target == host)
+# 1 = cross-compile (target != host)
+buildMode=${2:?"ERROR: Argument 2 for variable buildMode was not provided."}
+
+buildPrefix="/usr"
+dbusDir="/etc/dbus-1/system.d"
+udevDir="/etc/udev/rules.d"
+systemdDir="/lib/systemd/system"
+systemdPresetDir="/lib/systemd/system-preset"
+dataRootDir="/usr/share"
 
 repoName='libtpms'
 repoVersion='v0.9.2'
@@ -37,44 +58,89 @@ repoName4='tpm2-abrmd'
 repoVersion4='2.4.1'
 repoUrl4="https://github.com/tpm2-software/${repoName4}.git"
 
-requiredPkgs='git build-essential curl autoconf autoconf-archive libcmocka0 libcmocka-dev procps libcurl4-openssl-dev libssl-dev uuid-dev uthash-dev doxygen libltdl-dev libseccomp-dev libgnutls28-dev ca-certificates automake bash coreutils dh-autoreconf libtasn1-6-dev net-tools iproute2 libjson-c-dev libjson-glib-dev libini-config-dev expect libtool sed devscripts equivs gcc dh-exec pkg-config gawk make socat softhsm gnutls-bin glib-2.0 gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu'
+requiredPkgs='git cmake build-essential curl autoconf autoconf-archive libcmocka0 libcmocka-dev
+	procps libcurl4-openssl-dev libssl-dev uuid-dev uthash-dev doxygen libltdl-dev libseccomp-dev
+	libgnutls28-dev ca-certificates automake bash coreutils dh-autoreconf libtasn1-6-dev net-tools
+	iproute2 libjson-c-dev libjson-glib-dev libini-config-dev expect libtool sed devscripts equivs
+	gcc dh-exec pkgconf gawk make socat softhsm gnutls-bin glib-2.0 trousers libc6-dev libc-dev
+	python3 python3-twisted libglib2.0-dev libseccomp2 libgmp-dev libnss3-dev
+	libnspr4-dev'
+
+crossPkgs='gcc-arm-linux-gnueabi binutils-arm-linux-gnueabi
+	gcc-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
+	gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+	g++-arm-linux-gnueabi g++-arm-linux-gnueabihf
+	g++-arm-linux-gnu g++-aarch64-linux-gnu'
+
+buildDeps=('libssl-dev' 'libc-dev' 'libc6-dev' 'libgmp-dev' 'libnspr4-dev' 'libnss3-dev'
+	'openssl' 'libcmocka0' 'libcmocka-dev' 'uthash-dev' 'libjson-c-dev'
+	'libini-config-dev' 'libcurl4-openssl-dev' 'libltdl-dev' 'libglib2.0-dev' 'libseccomp-dev'
+	'uuid-dev' 'libgnutls28-dev' 'libtasn1-6-dev' 'libjson-glib-dev'
+)
 
 # Get CPU thread count for multithreading params
 cpus=$(nproc)
+cpus=$((cpus * 2))
 
-buildArch='x86_64-pc-linux-gnu'
+# workingDir='/root'
 
-[[ ${imgArch} == "arm" ]] && hostArch='arm-linux-gnu'
-[[ ${imgArch} == "aarch64" ]] && hostArch='aarch64-linux-gnu'
+# Ensure all arch non-specified sources are specified as host arch (amd64)
+# Leave any already specified archs untouched
+hostArchReplaceLine='s/^deb\s\([a-z]\)\(.*\)/deb \[arch=amd64\] \1\2/'
+targetArchReplaceLine='s/^deb\s\([a-z]\)\(.*\)/deb \[arch=armhf,arm64\] \1\2/'
+
+[[ ${imgArch} == "x86_64" ]] && hostArch='x86_64-pc-linux-gnu' && dpkgArch='amd64'
+[[ ${imgArch} == "arm" ]] && hostArch='arm-linux-gnueabi' # or hf ?
+[[ ${imgArch} == "aarch64" ]] && hostArch='aarch64-linux-gnu' && dpkgArch='arm64'
+
+sourcesPathSrc='sources'
+sourcesPathDest='/etc/apt/sources.list.d'
+mainSourcesFile='/etc/apt/sources.list'
+sourcesFileName="${imgOs}-${dpkgArch}-sources.list"
+sourcesFile="${sourcesPathSrc}/${sourcesFileName}"
 
 setupLib() {
-	local name=${1}
-	local ver=${2}
-	local url=${3}
-	local autog=${4:-0}
+local name=${1}
+local ver=${2}
+local url=${3}
 
-	rm -vrf "${name}"
+rm -vrf "${name}"
 
-	git clone -b "${ver}" "${url}"
+git clone -b "${ver}" "${url}"
 
-	cd "${name}"
+pushd "${name}"
 
-	git submodule update --init --recursive
+git submodule update --init --recursive
 
-	if [ "${autog}" -eq 1 ]; then
-		./bootstrap.sh
-		./autogen.sh --prefix="${buildPrefix}" --with-openssl --without-cuse --with-tss-user=root --with-tss-group=root --with-tpm2 --build=${buildArch} --host=${hostArch}
-	else
-		./bootstrap
-		./configure --prefix="${buildPrefix}" --with-dbuspolicydir="${dbusDir}" --with-udevrulesdir="${udevDir}" --with-systemdsystemunitdir="${systemdDir}" --with-systemdpresetdir="${systemdPresetDir}" --datarootdir="${dataRootDir}" --build=${buildArch} --host=${hostArch}
-	fi
+# Run bootstrap
+[ -f 'bootstrap.sh' ] && chmod +x ./bootstrap.sh && ./bootstrap.sh
+[ -f 'bootstrap' ] && chmod +x bootstrap && ./bootstrap
 
-	make clean
-	make -j"${cpus}"
-	make check
-	make install
+# Configure for build
+if [ -f 'autogen.sh' ]; then
+	chmod +x ./autogen.sh
+	[ "${buildMode}" -eq 0 ] && ./autogen.sh --prefix=${buildPrefix} --with-openssl --without-cuse --with-tss-user=root --with-tss-group=root --with-tpm2
+	[ "${buildMode}" -eq 1 ] && ./autogen.sh --host=${hostArch} --with-sysroot="${sysrootPath}" --prefix=${buildPrefix} --with-openssl --without-cuse --with-tss-user=root --with-tss-group=root --with-tpm2
+elif [ -f 'configure' ]; then
+	chmod +x ./configure
+	[ "${buildMode}" -eq 0 ] && ./configure --prefix=${buildPrefix} --with-dbuspolicydir="${dbusDir}" --with-udevrulesdir="${udevDir}" --with-systemdsystemunitdir="${systemdDir}" --with-systemdpresetdir="${systemdPresetDir}" --datarootdir="${dataRootDir}"
+	[ "${buildMode}" -eq 1 ] && ./configure --host=${hostArch} --with-sysroot="${sysrootPath}" --prefix=${buildPrefix} --with-dbuspolicydir="${dbusDir}" --with-udevrulesdir="${udevDir}" --with-systemdsystemunitdir="${systemdDir}" --with-systemdpresetdir="${systemdPresetDir}" --datarootdir="${dataRootDir}"
+fi
 
-	cd ..
+# Build using make with threads == cores
+make -j"${cpus}"
+
+# Ensure tests and checks pass etc
+# make check
+
+# Install also to the host machine for libs to be available for linking later
+[ "${buildMode}" -eq 0 ] && make install
+
+# Install to prefixed location
+# TODO!
+DESTDIR="${buildDest}" make install
+
+popd
 }
 
 
@@ -84,23 +150,55 @@ setupLib() {
 
 [[ ${1} == 'test' ]] && echo "Script self-test OK" && exit 0
 
+# pushd ${workingDir}
+
+if [ "${buildMode}" -eq 1 ]; then
+# Ensure architecture specified correctly in existing sources lists
+sed -i "${hostArchReplaceLine}" ${mainSourcesFile}
+sed -i "${hostArchReplaceLine}" ${sourcesPathDest}/* || true
+fi
+
 waitAptitude
 installPackages "${requiredPkgs}"
 
-systemctl disable apparmor
-apt remove --auto-remove --purge -y apparmor
-echo "AppArmor disabled and purged"
+if [ "${buildMode}" -eq 1 ]; then
+	waitAptitude
+	installPackages "${crossPkgs}"
+
+	export CFLAGS="--sysroot=${sysrootPath} -I/usr/include -I/usr/include/glib-2.0 -I/usr/include/* -I/usr/include/aarch64-linux-gnu/glib-2.0 -I/usr/include/aarch64-linux-gnu -I/usr/include/aarch64-linux-gnu/* -I${buildDest}/usr/include -I${sysrootPath}/usr/include -L/usr/lib -L/usr/lib/aarch64-linux-gnu -L${buildDest}/usr/lib -L${sysrootPath}/usr/lib"
+	export CXXFLAGS="--sysroot=${sysrootPath} -I/usr/include -I/usr/include/glib-2.0 -I/usr/include/* -I/usr/include/aarch64-linux-gnu/glib-2.0 -I/usr/include/aarch64-linux-gnu -I/usr/include/aarch64-linux-gnu/* -I${buildDest}/usr/include -I${sysrootPath}/usr/include -L/usr/lib -L/usr/lib/aarch64-linux-gnu -L${buildDest}/usr/lib -L${sysrootPath}/usr/lib"
+	export LDFLAGS="--sysroot=${sysrootPath} -I/usr/include -I/usr/include/glib-2.0 -I/usr/include/* -I/usr/include/aarch64-linux-gnu/glib-2.0 -I/usr/include/aarch64-linux-gnu -I/usr/include/aarch64-linux-gnu/* -L${buildDest}/usr/lib -L${sysrootPath}/usr/lib"
+
+	export PKG_CONFIG_PATH="/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/lib/aarch64-linux-gnu:/usr/lib/pkgconfig:/usr/share/pkgconfig:/usr/lib:${buildDest}/usr/lib/pkgconfig:${buildDest}/usr/share/pkgconfig:${buildDest}/usr/lib:${sysrootPath}/usr/lib/pkgconfig:${sysrootPath}/usr/share/pkgconfig"
+	export PKG_CONFIG_LIBDIR="/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/lib/aarch64-linux-gnu:/usr/lib/pkgconfig:/usr/share/pkgconfig:/usr/lib:${buildDest}/usr/lib/pkgconfig:${buildDest}/usr/share/pkgconfig:${buildDest}/usr/lib:${sysrootPath}/usr/lib/pkgconfig:${sysrootPath}/usr/share/pkgconfig:${sysrootPath}/usr/lib"
+	export PKG_CONFIG_SYSROOT_DIR="${sysrootPath}"
+
+	# Ensure target architecture marked on separate sources
+	sed -i "${targetArchReplaceLine}" "${sourcesFile}"
+	cp -v "${sourcesFile}" ${sourcesPathDest}
+	dpkg --add-architecture ${dpkgArch}
+
+	waitAptitude
+	apt-get update -y
+	for dep in "${buildDeps[@]}"; do
+		installPackage "${dep}:${dpkgArch}"
+	done
+fi
+
+# TODO!
+rm -vrf ${buildDest}
+mkdir -v ${buildDest}
 
 # Clone, build and install libtmps
-setupLib ${repoName} ${repoVersion} "${repoUrl}" 1
+setupLib ${repoName} ${repoVersion} "${repoUrl}"
 echo "Build & Install libtpms done"
 
 # Clone, build and install swtpm
-setupLib ${repoName2} ${repoVersion2} "${repoUrl2}" 1
+setupLib ${repoName2} ${repoVersion2} "${repoUrl2}"
 echo "Build & Install swtpm done"
 
 # Clone, build and install tpm2-tss
-setupLib ${repoName3} ${repoVersion3} "${repoUrl3}" 0
+setupLib ${repoName3} ${repoVersion3} "${repoUrl3}"
 echo "Build & Install tpm2-tss done"
 
 # TODO even possible or needed run on choot?
@@ -112,7 +210,7 @@ echo "Build & Install tpm2-tss done"
 # sleep 1
 
 # Clone, build and install tpm2-abrmd
-setupLib ${repoName4} ${repoVersion4} "${repoUrl4}" 0
+setupLib ${repoName4} ${repoVersion4} "${repoUrl4}"
 echo "Build & Install tpm2-abrmd done"
 
 # TODO even possible or needed run on choot?
@@ -122,5 +220,15 @@ echo "Build & Install tpm2-abrmd done"
 # pkill -HUP dbus-daemon
 # systemctl daemon-reload
 # sleep 1
+
+# TODO!
+pushd ${buildDest}
+
+tar -czvf ${pkgArchive} .
+chmod 0644 ${pkgArchive}
+
+popd
+
+# popd
 
 echo "tpm-device-setup.sh DONE"
