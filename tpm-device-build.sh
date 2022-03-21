@@ -4,30 +4,18 @@ set -ex
 userId=$(id -u)
 (( userId != 0 )) && echo "Current user not root. This script must be run as root user or with sudo privileges." && exit 1
 
-paramsFile='/image_params'
-
-bashBin='/bin/bash'
-rootBin='/root/bin'
-
-waitBin='wait-for-it.sh'
+# waitBin='wait-for-it.sh'
 commonBin='common.sh'
-
-# waitBin="${rootBin}/wait-for-it.sh"
-# commonBin="${rootBin}/common.sh"
 
 # shellcheck source=/dev/null
 source ${commonBin}
-
-# Read image params variables from file
-# shellcheck source=/dev/null
-# source ${paramsFile}
 
 imgOs=${IMAGE_OS:?"Variable IMAGE_OS is empty or not set."}
 imgArch=${IMAGE_ARCH:?"Variable IMAGE_ARCH is empty or not set."}
 
 pkgName='tpm-bundle'
 pkgArchiveName="${pkgName}.tar.gz"
-pkgArchive="/root/${pkgArchiveName}"
+pkgArchive="./${pkgArchiveName}"
 buildDest="/root/${pkgName}"
 
 sysrootPath=${1:-''}
@@ -138,7 +126,6 @@ make -j"${cpus}"
 [ "${buildMode}" -eq 0 ] && make install
 
 # Install to prefixed location
-# TODO!
 DESTDIR="${buildDest}" make install
 
 popd
@@ -154,9 +141,9 @@ popd
 # pushd ${workingDir}
 
 if [ "${buildMode}" -eq 1 ]; then
-# Ensure architecture specified correctly in existing sources lists
-sed -i "${hostArchReplaceLine}" ${mainSourcesFile}
-sed -i "${hostArchReplaceLine}" ${sourcesPathDest}/* || true
+	# Ensure architecture specified correctly in existing sources lists
+	sed -i "${hostArchReplaceLine}" ${mainSourcesFile}
+	sed -i "${hostArchReplaceLine}" ${sourcesPathDest}/* || true
 fi
 
 waitAptitude
@@ -186,7 +173,6 @@ if [ "${buildMode}" -eq 1 ]; then
 	done
 fi
 
-# TODO!
 rm -vrf ${buildDest}
 mkdir -v ${buildDest}
 
@@ -202,33 +188,12 @@ echo "Build & Install swtpm done"
 setupLib ${repoName3} ${repoVersion3} "${repoUrl3}"
 echo "Build & Install tpm2-tss done"
 
-# TODO even possible or needed run on choot?
-# udevadm control --reload-rules
-# udevadm trigger
-# ldconfig
-# pkill -HUP dbus-daemon
-# systemctl daemon-reload
-# sleep 1
-
 # Clone, build and install tpm2-abrmd
 setupLib ${repoName4} ${repoVersion4} "${repoUrl4}"
 echo "Build & Install tpm2-abrmd done"
 
-# TODO even possible or needed run on choot?
-# udevadm control --reload-rules
-# udevadm trigger
-# ldconfig
-# pkill -HUP dbus-daemon
-# systemctl daemon-reload
-# sleep 1
-
-# TODO!
-pushd ${buildDest}
-
-tar -czvf ${pkgArchive} .
+tar -czvf ${pkgArchive} -C ${buildDest} .
 chmod 0644 ${pkgArchive}
-
-popd
 
 # popd
 
