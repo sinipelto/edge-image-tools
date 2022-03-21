@@ -42,7 +42,7 @@ imgFilesListUrl="${imgServer}/${imgOs}/${imgArch}${sasToken}&comp=list&restype=d
 ##### START #####
 #################
 
-cd "${workingDir}"
+pushd "${workingDir}"
 
 read -rp "DATA LOSS WARNING! Selected device: ${targetDev}. Continue? (y/n) " ans
 
@@ -75,3 +75,5 @@ done
 (( count >= countMax )) && echo "ERROR: Failed to write image to device." && exit 1
 
 echo "Image written to target device."
+
+popd
