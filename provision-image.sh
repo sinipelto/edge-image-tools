@@ -10,7 +10,6 @@ bashBin='/bin/bash'
 rootBin='/root/bin'
 waitBin="${rootBin}/wait-for-it.sh"
 commonBin="${rootBin}/common.sh"
-attestationBin="${rootBin}/tpm-attestation-setup.sh"
 
 sleepBin='/bin/sleep'
 shutdownBin='/sbin/shutdown'

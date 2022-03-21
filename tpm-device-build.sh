@@ -26,7 +26,8 @@ imgOs=${IMAGE_OS:?"Variable IMAGE_OS is empty or not set."}
 imgArch=${IMAGE_ARCH:?"Variable IMAGE_ARCH is empty or not set."}
 
 pkgName='tpm-bundle'
-pkgArchive="${pkgName}.tar.gz"
+pkgArchiveName="${pkgName}.tar.gz"
+pkgArchive="/root/${pkgArchiveName}"
 buildDest="/root/${pkgName}"
 
 sysrootPath=${1:-''}
@@ -231,4 +232,4 @@ popd
 
 # popd
 
-echo "tpm-device-setup.sh DONE"
+echo "${0} DONE"

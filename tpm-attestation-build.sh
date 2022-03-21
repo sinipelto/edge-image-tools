@@ -6,27 +6,31 @@ userId=$(id -u)
 
 paramsFile='/image_params'
 
-commonBin='/root/bin/common.sh'
-waitBin='/root/bin/wait-for-it.sh'
+bashBin='/bin/bash'
+rootBin='/root/bin'
 
-# commonBin='common.sh'
-# waitBin='wait-for-it.sh'
+waitBin='wait-for-it.sh'
+commonBin='common.sh'
+
+# waitBin="${rootBin}/wait-for-it.sh"
+# commonBin="${rootBin}/common.sh"
 
 # shellcheck source=/dev/null
 source ${commonBin}
 
 # Read image params variables from file
 # shellcheck source=/dev/null
-source ${paramsFile}
-
-# Register the device as IoT Edge device on the IoT Hub
-runAttestation=${1:-1}
+# source ${paramsFile}
 
 # NOTE: global endpoint already defined in the source
 # iotDpsGlobalEndpoint='global.azure-devices-provisioning.net'
 idScope=${DPS_ID_SCOPE:?Variable DPS_ID_SCOPE is empty or not set.}
 
-requiredPkgs='git cmake build-essential curl libcurl4-openssl-dev libssl-dev uuid-dev libseccomp-dev libgnutls28-dev ca-certificates automake autoconf bash coreutils dh-autoreconf libtasn1-6-dev net-tools iproute2 libjson-glib-dev expect libtool sed devscripts equivs gcc dh-exec pkg-config gawk make socat'
+requiredPkgs='git cmake build-essential curl autoconf autoconf-archive libcmocka0 libcmocka-dev
+	procps libcurl4-openssl-dev libssl-dev uuid-dev uthash-dev doxygen libltdl-dev libseccomp-dev
+	libgnutls28-dev ca-certificates automake bash coreutils dh-autoreconf libtasn1-6-dev net-tools
+	iproute2 libjson-c-dev libjson-glib-dev libini-config-dev expect libtool sed devscripts equivs
+	gcc dh-exec pkgconf gawk make socat softhsm gnutls-bin glib-2.0'
 
 repoName='azure-iot-sdk-c'
 repoVersion='lts_01_2022_custom'
@@ -44,8 +48,11 @@ provClientLLSrc="${provClientLL}.c"
 
 replaceIdScope="s/[[:space:]]*static[[:space:]]*const[[:space:]]*char[[:space:]]*\*[[:space:]]*id_scope[[:space:]]*=.*/static const char\* id_scope = \"${idScope}\";/"
 
+# workingDir='/root'
+
 # Get CPU thread count for multithreading params
 cpus=$(nproc)
+cpus=$((cpus * 2))
 
 
 ################################################################################
@@ -54,7 +61,7 @@ cpus=$(nproc)
 
 [[ ${1} == 'test' ]] && echo "Script self-test OK" && exit 0
 
-ogDir=${PWD}
+# pushd ${workingDir}
 
 waitAptitude
 installPackages "${requiredPkgs}"
@@ -63,7 +70,7 @@ rm -vrf ${repoName}
 
 git clone -b ${repoVersion} ${repoUrl}
 
-cd ${repoName}
+pushd ${repoName}
 
 git submodule update --init --recursive
 
@@ -88,22 +95,15 @@ sed -i "${replaceIdScope}" ${provClientLLSrc}
 rm -vrf ${buildDir}
 mkdir -v ${buildDir}
 
-cd ${buildDir}
+pushd ${buildDir}
 
 cmake -Duse_prov_client:BOOL=ON ..
 
 cmake --build . -- -j "${cpus}"
 
-# Forked repo: no getch => no stdin needed
-# Test and Printout EK and RegID for curren TPM device
-${provTool}
-
-if [[ ${runAttestation} -eq 1 ]]; then
-	echo "Executing attestation.."
-	${provClient}
-fi
-
 # Go back to original dir
-cd "${ogDir}"
+# popd
+# popd
+# popd
 
-echo "tpm-attestation-setup.sh DONE"
+echo "${0} DONE"
