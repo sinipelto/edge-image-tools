@@ -1,3 +1,41 @@
+Swtpm Setup + run swtpm, resmgr on bg
+
+tpmStateDest=/root/vtpm
+
+tpmStateDest=/persistence/vtpm
+
+rm -vrf ${tpmStateDest}
+mkdir -vm 0700 ${tpmStateDest}
+
+swtpm_setup \
+	--runas 0 \
+	--tpmstate ${tpmStateDest} \
+	--tpm2 \
+	--createek \
+	--decryption \
+	--create-ek-cert \
+	--create-platform-cert \
+	--lock-nvram \
+	--not-overwrite \
+	--display \
+	--vmid iotedge-base-image
+
+swtpm socket \
+	--runas 0 \
+	--tpmstate dir=${tpmStateDest} \
+	--tpm2 \
+	--server type=tcp,port=2321,disconnect \
+	--ctrl type=tcp,port=2322 \
+	--flags not-need-init,startup-clear &
+
+tpm2-abrmd -o -t 'swtpm' &
+
+
+NOTE!!!
+
+DOES NOT WORK ON CHROOT!
+
+
 requiredPkgs='git cmake build-essential curl libcurl4-openssl-dev libssl-dev uuid-dev libseccomp-dev libgnutls28-dev ca-certificates automake autoconf bash coreutils dh-autoreconf libtasn1-6-dev net-tools iproute2 libjson-glib-dev expect libtool sed devscripts equivs gcc dh-exec pkgconf gawk make socat'
 
 

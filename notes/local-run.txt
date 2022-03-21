@@ -1,4 +1,4 @@
-Expect: PWD == repoDir
+Expected: PWD == repoDir
 
 Full run create & publish image over SSH on Linux target PowerShell:
 
@@ -12,13 +12,20 @@ Copy all bash scripts and run shellcheck on all scripts GIT BASH:
 ssh azvm -C "sudo rm -vrf check && mkdir -vm 0755 check" && scp -r *.sh azvm:check/ && ssh azvm -C "cd check && sudo rm -vf wait-for-it.sh largefiles.sh && shellcheck -x *.sh"
 
 
+With shellcheck installation GIT BASH:
+
+ssh azvm -C "sudo apt -y update && sudo apt -y install shellcheck && sudo rm -vrf check && mkdir -vm 0755 check" && scp -r *.sh azvm:check/ && ssh azvm -C "cd check && sudo rm -vf wait-for-it.sh largefiles.sh && shellcheck -x *.sh"
+
+
 
 
 Copy and run TPM simulator setup script GIT BASH:
 
-ssh azvm -C "sudo rm -vrf simulator && mkdir -vm 0755 simulator" && scp -r * azvm:simulator/ && ssh azvm -C "echo -e '\n\n\n' && cd simulator && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-device-build.sh'"
+ssh azvm -C "sudo rm -vrf simulator && mkdir -vm 0755 simulator" && scp -r * azvm:simulator/ && ssh azvm -C "echo -e '\n\n\n' && cd simulator && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-device-build.sh / 0'"
 
-scp -r * azvm:simulator/ && ssh azvm -C "echo -e '\n\n\n' && cd simulator && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-device-build.sh'"
+scp -r * azvm:simulator/ && ssh azvm -C "echo -e '\n\n\n' && cd simulator && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-device-build.sh / 0'"
+
+
 
 
 Copy and run TPM attestation script GIT BASH:
@@ -26,6 +33,8 @@ Copy and run TPM attestation script GIT BASH:
 ssh azvm -C "sudo rm -vrf attestation && mkdir -vm 0755 attestation" && scp -r * azvm:attestation/ && ssh azvm -C "echo -e '\n\n\n' && cd attestation && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-attestation-build.sh'"
 
 scp -r * azvm:attestation/ && ssh azvm -C "echo -e '\n\n\n' && cd attestation && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-attestation-build.sh'"
+
+
 
 
 Cleanup old, copy repo and run TPM setup + attestation GIT BASH:
@@ -40,6 +49,8 @@ scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n\n' && cd repo && sudo chmod -v
 ssh raspi -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * raspi:repo/ && ssh raspi -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-device-build.sh / 0'"
 
 scp -r * raspi:repo/ && ssh raspi -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-device-build.sh / 0'"
+
+
 
 
 Full run create image and publish to azure GIT BASH:

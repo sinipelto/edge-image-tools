@@ -1,0 +1,48 @@
+part=/media/root
+
+mkdir -p ${part}
+
+# mount binds
+mount --bind /dev ${part}/dev/
+mount --bind /sys ${part}/sys/
+mount --bind /proc ${part}/proc/
+mount --bind /dev/pts ${part}/dev/pts
+
+# ld.so.preload fix
+sed -i 's/^/#CHROOT /g' ${part}/etc/ld.so.preload
+
+
+
+
+# Copy qemu bin
+
+cp /usr/bin/qemu-arm-static ${part}/usr/bin/
+
+
+
+
+# Chroot to raspi rootfs using qemu static
+
+chroot /media/root qemu-arm-static /bin/bash
+
+chroot /media/root qemu-aarch64-static /bin/bash
+
+
+
+
+# Execute command and return
+
+chroot /media/root qemu-arm-static /bin/bash -vc "COMMAND"
+
+chroot /media/root qemu-aarch64-static /bin/bash -vc "COMMAND"
+
+
+
+
+# Clean up
+# revert ld.so.preload fix
+sed -i 's/^#CHROOT //g' ${part}/etc/ld.so.preload
+
+# unmount everything
+umount ${part}/{dev/pts,dev,sys,proc}
+umount ${part}
