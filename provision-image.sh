@@ -11,6 +11,19 @@ rootBin='/root/bin'
 waitBin="${rootBin}/wait-for-it.sh"
 commonBin="${rootBin}/common.sh"
 
+edgeConfigTemplateFile='/root/edge-config-tpm.toml.template'
+edgeConfigTarget='/etc/aziot/config.toml'
+
+ekOutputFile='/root/ek_out'
+regOutputFile='/root/rg_out'
+
+provToolBin="${rootBin}/tpm_device_provision"
+provClientBin="${rootBin}/prov_dev_client_sample"
+
+tpmSocketHost='localhost'
+tpmServerPort='2321'
+tpmCtrlPort='2322'
+
 sleepBin='/bin/sleep'
 shutdownBin='/sbin/shutdown'
 dateBin='/bin/date'
@@ -22,15 +35,17 @@ source ${commonBin}
 # shellcheck source=/dev/null
 source ${paramsFile}
 
-version=${IMAGE_VERSION}
-os=${IMAGE_OS}
-arch=${IMAGE_ARCH}
-versionFile=${IMAGE_VER_FILE}
+version=${IMAGE_VERSION:?"Variable IMAGE_VERSION is empty or not set."}
+os=${IMAGE_OS:?"Variable IMAGE_OS is empty or not set."}
+arch=${IMAGE_ARCH:?"Variable IMAGE_ARCH is empty or not set."}
+versionFile=${IMAGE_VER_FILE:?"Variable IMAGE_VER_FILE is empty or not set."}
+
+idScope=${DPS_ID_SCOPE:?"Variable DPS_ID_SCOPE is empty or not set."}
 
 # Read/List SAS token for update image file share
 # Images will be in format: YYYY-MM-DD_VERSION.img.xz
-imgServer=${IMAGE_SERVER_URL}
-sasToken=${SAS_TOKEN_URL_QUERY}
+imgServer=${IMAGE_SERVER_URL:?"Variable IMAGE_SERVER_URL is empty or not set."}
+sasToken=${SAS_TOKEN_URL_QUERY:?"Variable SAS_TOKEN_URL_QUERY is empty or not set."}
 
 imgVersionUrl="${imgServer}/${os}/${arch}/${versionFile}${sasToken}"
 
@@ -48,6 +63,15 @@ initUserUbuntu='ubuntu'
 
 provFile='/root/.provisioned'
 provText="Pre-Built IoT Edge Image\nImage Version: ${version}\nDevice Provision Date: ${dateTime}"
+
+ensure_tpm() {
+	echo "Ensure connection to TPM and ResourceManager available.."
+
+	${waitBin} -t 30 -h ${tpmSocketHost} -p ${tpmServerPort}
+	${waitBin} -t 30 -h ${tpmSocketHost} -p ${tpmCtrlPort}
+
+	echo "Connections to TPM ok."
+}
 
 ensure_apt() {
 	echo "Ensure connection to APT required services available.."
@@ -131,11 +155,25 @@ install_deps() {
 configure_edge() {
 	echo "Configure iot edge specific settings.."
 
-	echo "Fetch provisioning information.."
+	echo "Ensure TPM device is available.."
+	ensure_tpm
 
-	${bashBin} ${attestationBin}
+	echo "Fetch provisioning information from TPM.."
+	${provToolBin} ${ekOutputFile} ${regOutputFile}
 
-	# TODO sed config toml
+	echo "Register the edge device to pre-configured IoT Hub.."
+	${provClientBin} "${idScope}"
+
+	echo "Set edge configuration file.."
+
+	endKey=$(cat ${ekOutputFile})
+	regId=$(cat ${regOutputFile})
+
+	# Set ID_SCOPE and REG_ID for communicating with 
+	sed -i "s/<DPS_ID_SCOPE>/${idScope}/" ${edgeConfigTemplateFile}
+	sed -i "s/<DPS_REGISTRATION_ID>/${regId}/" ${edgeConfigTemplateFile}
+
+	cp -v ${edgeConfigTemplateFile} ${edgeConfigTarget}
 
 	echo "Apply iot edge config.."
 	iotedge config apply
