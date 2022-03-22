@@ -46,9 +46,19 @@ Without deleting previous assets, copy repo and run TPM Device Setup GIT BASH:
 
 scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-device-build.sh /media/root 1'"
 
+
+Without deleting previous assets, copy repo and run TPM Device Setup on raspi GIT BASH:
+
 ssh raspi -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * raspi:repo/ && ssh raspi -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-device-build.sh / 0'"
 
 scp -r * raspi:repo/ && ssh raspi -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-device-build.sh / 0'"
+
+
+Without deleting previous assets, copy repo and run TPM Attestation Setup on raspi GIT BASH:
+
+ssh raspi -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * raspi:repo/ && ssh raspi -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-attestation-build.sh'"
+
+scp -r * raspi:repo/ && ssh raspi -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-attestation-build.sh'"
 
 
 
