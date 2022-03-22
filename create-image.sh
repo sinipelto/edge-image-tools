@@ -61,9 +61,9 @@ persistenceMount=${PERSISTENCE_MOUNT_POINT:?"Variable PERSISTENCE_MOUNT_POINT is
 
 zeroDev='/dev/zero'
 
-part1='/media/boot' # Boot
-part2='/media/root' # Rootfs
-part3='/media/persistence' # Persistence
+partBoot='/media/boot' # Boot
+partRoot='/media/root' # Rootfs
+partPersist='/media/persistence' # Persistence
 
 partNumBoot=1
 partNumRoot=2
@@ -72,15 +72,12 @@ partNumPersist=3
 qemuBin="qemu-${imgArch}-static"
 bashBin='/bin/bash'
 
-rootBin="${part2}/root/bin"
+rootBin="${partRoot}/root/bin"
 
-persistencePath="${part2}/persistence"
+persistencePath="${partRoot}/persistence"
 
-partParamsFile="${part2}/${imgParamsFile}"
-partInfoFile="${part2}/image_info"
-
-tpmDeviceSetupScript='tpm-device-setup.sh'
-tpmAttestationSetupScript='tpm-attestation-setup.sh'
+partParamsFile="${partRoot}/${imgParamsFile}"
+partInfoFile="${partRoot}/image_info"
 
 # License: MIT - Free/Commercial use + modifications
 waitforitScript='wait-for-it.sh'
@@ -91,7 +88,7 @@ provisionServicePath="services/${provisionService}"
 
 resizeLine='s/ init=\/usr\/lib\/raspi-config\/init_resize.sh//g'
 
-systemdPath="${part2}/lib/systemd/system"
+systemdPath="${partRoot}/lib/systemd/system"
 
 assetPath='image_files'
 
@@ -102,7 +99,7 @@ userFile="${assetPath}/user-data"
 netplanFile="${assetPath}/95-network.yaml"
 
 cmdlineFile='cmdline.txt'
-cmdlineFile="${part1}/${cmdlineFile}"
+cmdlineFile="${partBoot}/${cmdlineFile}"
 
 delOgUser=${DEL_OG_USER} && [ -z "${delOgUser}" ] && echo "Variable DEL_OG_USER is empty or not set." && exit 1
 
@@ -130,39 +127,60 @@ keyComment=${SSH_KEY_COMMENT} && [ -z "${keyComment}" ] && echo "WARNING: Variab
 keyFile=${SSH_KEY_FILE} && [ -z "${keyFile}" ] && echo "Variable SSH_KEY_FILE is empty or not set." && exit 1
 keyFilePub="${keyFile}.pub"
 
-sudoersFile="${part2}/etc/sudoers.d/010_${baseUser}"
+sudoersFile="${partRoot}/etc/sudoers.d/010_${baseUser}"
 
 sshPath="${baseHome}/.ssh"
 authFile="${sshPath}/authorized_keys"
 
-partSshPath="${part2}${sshPath}"
-partAuthFile="${part2}${authFile}"
+partSshPath="${partRoot}${sshPath}"
+partAuthFile="${partRoot}${authFile}"
 
 # Stored state dir for restoring backed up vTPM state
 tpmStateDest=${TPM_STATE_DEST:?"Variable TPM_STATE_DEST is empty or not set."}
+tpmStateDestHost=${partRoot}/${tpmStateDest}
 
 # TPM software simulator or a real tpm device? 
 useTpmSim=${USE_TPM_SIMULATOR:?"Variable USE_TPM_SIMULATOR is empty or not set."}
 
+# Do we display the TPM details on the output?
+runTpmAttes=${RUN_TPM_ATTESTATION:?"Variable RUN_TPM_ATTESTATION is empty or not set."}
+
+tpmLocalCaPath='/var/lib/swtpm-localca'
+
+attesBundleZipHost='pre-built/prov-bundle-ubuntu20-x86_64.tar.gz'
+attesBundleZip="pre-built/prov-bundle-${imgOs}-${imgArch}.tar.gz"
+
+tpmBundleZipHost='pre-built/tpm-bundle-ubuntu20-x86_64.tar.gz'
+tpmBundleZip="pre-built/tpm-bundle-${imgOs}-${imgArch}.tar.gz"
+
+abrmdService='tpm2-abrmd.service'
 abrmdServiceSim='tpm2-abrmd-swtpm.service'
 abrmdServiceSimPath="services/${abrmdServiceSim}"
 
 swtpmService='tpm2-swtpm.service'
 swtpmServicePath="services/${swtpmService}.template"
 
-aptPackages='coreutils bash grep util-linux curl fdisk zip unzip xz-utils binfmt-support qemu-user-static'
+provBundlePath='prov_bundle'
+
+provTool="${provBundlePath}/provisioning_client/tools/tpm_device_provision/tpm_device_provision"
+provClient="${provBundlePath}/provisioning_client/samples/prov_dev_client_sample/prov_dev_client_sample"
+
+aptPackages='coreutils bash grep util-linux curl fdisk zip unzip 
+	xz-utils binfmt-support qemu-user-static tar'
 
 # Get CPU thread count for multithreading params
 cpus=$(nproc)
+cpus=$((cpus * 2))
 
 wSync() {
 	sync
 	sleep 2
 }
 
-#################
-##### START #####
-#################
+
+################################################################################
+################################	START	####################################
+################################################################################
 
 [[ ${1} == 'test' ]] && echo "Script self-test OK" && exit 0
 
@@ -221,22 +239,22 @@ else
 	[[ ${srcFileExt} == "xz" ]] && unxz -vv -d "${keepArchive}" -T "${cpus}" ${imgFileZip}
 	[[ ${srcFileExt} == "zip" ]] && unzip -o ${imgFileZip}
 	mv -v ./*.img ${imgFile} || true
-#	[ "${devMode}" -eq 1 ] && [ "${localMode}" -eq 1 ] && cp -v ${imgFile} ${imgFile}.bak
+	[ "${devMode}" -eq 1 ] && [ "${localMode}" -eq 1 ] && cp -v ${imgFile} ${imgFile}.bak
 fi
 
 wSync
-umount -lfv ${part1} || true
-umount -lfv ${part2} || true
-umount -lfv ${part3} || true
+umount -lfv ${partBoot} || true
+umount -lfv ${partRoot} || true
+umount -lfv ${partPersist} || true
 wSync
 
-rm -vrf ${part1}
-rm -vrf ${part2}
-rm -vrf ${part3}
+rm -vrf ${partBoot}
+rm -vrf ${partRoot}
+rm -vrf ${partPersist}
 
-mkdir -vp ${part1}
-mkdir -vp ${part2}
-mkdir -vp ${part3}
+mkdir -vp ${partBoot}
+mkdir -vp ${partRoot}
+mkdir -vp ${partPersist}
 
 losetup -v -D
 wSync
@@ -300,9 +318,9 @@ loopDev=$(losetup -f)
 losetup -v -f -P ${imgFile}
 wSync
 
-mount -v -t vfat -o rw "${loopDev}p${partNumBoot}" ${part1}
-mount -v -t ext4 -o rw "${loopDev}p${partNumRoot}" ${part2}
-mount -v -t ext4 -o rw "${loopDev}p${partNumPersist}" ${part3}
+mount -v -t vfat -o rw "${loopDev}p${partNumBoot}" ${partBoot}
+mount -v -t ext4 -o rw "${loopDev}p${partNumRoot}" ${partRoot}
+mount -v -t ext4 -o rw "${loopDev}p${partNumPersist}" ${partPersist}
 wSync
 
 # Mount persistence partition inside rootfs partition for chroot manipulation
@@ -310,30 +328,40 @@ mkdir ${persistencePath}
 mount -v -t ext4 -o rw "${loopDev}p${partNumPersist}" ${persistencePath}
 wSync
 
+mount --bind /dev ${partRoot}/dev/
+mount --bind /sys ${partRoot}/sys/
+mount --bind /proc ${partRoot}/proc/
+mount --bind /dev/pts ${partRoot}/dev/pts
+
 # Add auto mount entry to rootfs partition table
 partUuid="UUID=$(blkid "${loopDev}p${partNumPersist}" -s UUID -o value)"
-echo -e "${partUuid}\t${persistenceMount}\text4\tdefaults\t0\t2" >> ${part2}/etc/fstab
+echo -e "${partUuid}\t${persistenceMount}\text4\tdefaults\t0\t2" >> ${partRoot}/etc/fstab
 
-touch ${part1}/${sshFile}
+touch ${partBoot}/${sshFile}
 
-cp -v ${wpaFile} ${part1}/
-cp -v ${netFile} ${part1}/
-cp -v ${userFile} ${part1}/
+cp -v ${wpaFile} ${partBoot}/
+cp -v ${netFile} ${partBoot}/
+cp -v ${userFile} ${partBoot}/
 
 # NOTE: If disabled part+fs resizing => no free space left on rootfs with RaspiOS!
 # Solution: For raspios the rootfs partition + fs is resized
 sed -i "${resizeLine}" ${cmdlineFile}
 
+# Extract necessary provisioning bundles for image and install them
+rm -vrf ${provBundlePath}
+tar -xzvkf "${attesBundleZip}" -C .
+
 [ ! -d ${rootBin} ] && mkdir -vm 0700 ${rootBin}
 cp -v ${commonScript} ${rootBin}/
 cp -v ${waitforitScript} ${rootBin}/
 cp -v ${provisionScript} ${rootBin}/
-cp -v ${tpmAttestationSetupScript} ${rootBin}/
+cp -v ${provTool} ${rootBin}/
+cp -v ${provClient} ${rootBin}/
 chmod -vR 0700 ${rootBin}
 
 cp -v ${provisionServicePath} ${systemdPath}/
 
-[[ ${imgOs} == "ubuntu"* ]] && cp -v ${netplanFile} ${part2}/etc/netplan/
+[[ ${imgOs} == "ubuntu"* ]] && cp -v ${netplanFile} ${partRoot}/etc/netplan/
 
 cat > "${partParamsFile}" << EOF
 export IMAGE_VERSION='${imgVer}'
@@ -362,40 +390,35 @@ EOF
 chmod -v 0440 "${sudoersFile}"
 fi
 
-${bashBin} ${tpmDeviceSetupScript} ${part2}
+# Install tpm bundle both locally and on target image
+tar -xzvkf ${tpmBundleZipHost} -C /
+tar -xzvkf "${tpmBundleZip}" -C ${partRoot}
 
-tpmStateDest=$(echo "${tpmStateDest}" | sed 's/\//\\\//g')
-sed -i "s/<TPM_STATE_DIR>/${tpmStateDest}/" ${swtpmServicePath}
+# Set up swtpm state dir
+rm -vrf "${tpmStateDestHost}"
+mkdir -vm 0700 "${tpmStateDestHost}"
+
+tpmStateDestFixed=$(echo "${tpmStateDest}" | sed 's/\//\\\//g')
+sed -i "s/<TPM_STATE_DIR>/${tpmStateDestFixed}/" ${swtpmServicePath}
 cp -v ${swtpmServicePath} "${systemdPath}/${swtpmService}"
 
 echo "Set up systemd service for swtpm"
 
 if [ "${useTpmSim}" -eq 1 ]; then
 	echo "Using systemd service for TPM simulator.."
-	cp -v ${abrmdServiceSimPath} "${systemdPath}/${abrmdServiceSim}"
+	cp -v ${abrmdServiceSimPath} "${systemdPath}/${abrmdService}"
 else
 	echo "Using systemd service for real TPM device.."
 	# NOTE 2022-03-13: No real device configuration available yet due to lack of real hardware
+	echo "ERROR: FEATURE NOT IMPLEMENTED YET"
+	exit 1
 fi
 
 echo "Set up systemd service for tpm2-abrmd"
 
-# TODO azuresdkc cmake?
-
-cp -v "$(which "${qemuBin}")" ${part2}/usr/bin/
-sed -i 's/^/#/g' ${part2}/etc/ld.so.preload && preloadModified=1 || preloadModified=0
-
-chroot ${part2} "${qemuBin}" ${bashBin} -vc "systemctl enable ${swtpmService}"
-
-chroot ${part2} "${qemuBin}" ${bashBin} -vc "systemctl enable ${abrmdServiceSim}"
-
-chroot ${part2} "${qemuBin}" ${bashBin} -vc "rm -vrf ${tpmStateDest}"
-
-chroot ${part2} "${qemuBin}" ${bashBin} -vc "mkdir -vm 0700 ${tpmStateDest}"
-
-chroot ${part2} "${qemuBin}" ${bashBin} -vc "swtpm_setup \
+swtpm_setup \
 	--runas 0 \
-	--tpmstate ${tpmStateDest} \
+	--tpmstate "${tpmStateDestHost}" \
 	--tpm2 \
 	--createek \
 	--decryption \
@@ -404,36 +427,64 @@ chroot ${part2} "${qemuBin}" ${bashBin} -vc "swtpm_setup \
 	--lock-nvram \
 	--not-overwrite \
 	--display \
-	--vmid iotedge-base-image"
+	--vmid iotedge-base-image
 
-chroot ${part2} "${qemuBin}" ${bashBin} -vc "swtpm socket \
+cp -vr ${tpmLocalCaPath}/* ${partRoot}/${tpmLocalCaPath}/
+
+swtpm socket \
 	--runas 0 \
-	--tpmstate dir=${tpmStateDest} \
+	--tpmstate dir="${tpmStateDestHost}" \
 	--tpm2 \
-	--server type=tcp,port2321,disconnect \
-	--ctrl type=tcp,port2322 \
-	--flags not-need-init,startup-clear \
-	&"
+	--server type=tcp,port=2321,disconnect \
+	--ctrl type=tcp,port=2322 \
+	--flags not-need-init,startup-clear &
 
-chroot ${part2} "${qemuBin}" ${bashBin} -vc "tpm2-abrmd -o -t 'swtpm' &"
+sleep 1
 
-chroot ${part2} "${qemuBin}" ${bashBin} -vc "/PATH/TO/TPM_PROVISION"
+tpm2-abrmd -o -t 'swtpm' &
 
-chroot ${part2} "${qemuBin}" ${bashBin} -vc "systemctl enable ${provisionService}"
+sleep 1
+
+# Extract and install the prov client tools for host
+rm -vrf ${provBundlePath}
+tar -xzvkf "${attesBundleZipHost}" -C .
+
+# Store results into temp files (for dev) or into null device (prod)
+[[ $devMode -eq 1 ]] && ekOutputFile='/tmp/ek_out' && regOutputFile='/tmp/rg_out'
+[[ $devMode -eq 0 ]] && ekOutputFile='/dev/null' && regOutputFile='/dev/null'
+
+# Test and Printout EK and RegID for curren TPM device
+# Built from forked repo: no getch => no stdin needed to be provided into the program
+[ "${runTpmAttes}" -eq 1 ] && ${provTool} ${ekOutputFile} ${regOutputFile}
+
+pkill tpm2-abrmd || true
+sleep 1
+
+pkill swtpm || true
+sleep 1
+
+cp -v "$(which "${qemuBin}")" ${partRoot}/usr/bin/
+sed -i 's/^/#/g' ${partRoot}/etc/ld.so.preload && preloadModified=1 || preloadModified=0
+
+chroot ${partRoot} "${qemuBin}" ${bashBin} -vc "systemctl enable ${swtpmService}"
+
+chroot ${partRoot} "${qemuBin}" ${bashBin} -vc "systemctl enable ${abrmdService}"
+
+chroot ${partRoot} "${qemuBin}" ${bashBin} -vc "systemctl enable ${provisionService}"
 
 if [ "${delOgUser}" -eq 1 ]; then
-	{ [[ ${imgOs} == "rasp"* ]] && chroot ${part2} "${qemuBin}" ${bashBin} -vc "userdel -rf ${ogUserRaspios}"; } || true
-	{ [[ ${imgOs} == "ubuntu"* ]] && chroot ${part2} "${qemuBin}" ${bashBin} -vc "userdel -rf ${ogUserUbuntu}"; } || true
+	{ [[ ${imgOs} == "rasp"* ]] && chroot ${partRoot} "${qemuBin}" ${bashBin} -vc "userdel -rf ${ogUserRaspios}"; } || true
+	{ [[ ${imgOs} == "ubuntu"* ]] && chroot ${partRoot} "${qemuBin}" ${bashBin} -vc "userdel -rf ${ogUserUbuntu}"; } || true
 fi
 
 if [ -n "${baseUser}" ]; then
 
-chroot ${part2} "${qemuBin}" ${bashBin} -vc "useradd -m -G ${baseGroups} -s ${bashBin} ${baseUser}"
+chroot ${partRoot} "${qemuBin}" ${bashBin} -vc "useradd -m -G ${baseGroups} -s ${bashBin} ${baseUser}"
 
 [ ! -d "${partSshPath}" ] && mkdir -vm 0700 "${partSshPath}"
 
 if [ -n "${sshPubKey}" ]; then
-echo "SSH Public key set. Appending pub key for base user."
+	echo "SSH Public key set. Appending pub key for base user."
 cat >> "${partAuthFile}" << EOF
 ${sshPubKey}
 EOF
@@ -444,10 +495,10 @@ fi
 # NO VERBOSITY, password being echoed
 if [ "${devMode}" -eq 1 ] && [ -n "${basePass}" ]; then
 	echo "Base user password set. Applying password.."
-	chroot ${part2} "${qemuBin}" ${bashBin} -c "echo '${baseUser}:${basePass}' | chpasswd"
+	chroot ${partRoot} "${qemuBin}" ${bashBin} -c "echo '${baseUser}:${basePass}' | chpasswd"
 else
 	echo "Base user password not set. Removing expiring and locking base user password."
-	chroot ${part2} "${qemuBin}" ${bashBin} -vc "passwd -d -l ${baseUser}"
+	chroot ${partRoot} "${qemuBin}" ${bashBin} -vc "passwd -d -l ${baseUser}"
 fi
 
 # If local, generate new ssh key to local, and append it to auth keys
@@ -458,27 +509,29 @@ if [ "${localMode}" -eq 1 ] && [ "${createLocalKey}" -eq 1 ]; then
 	cat "${keyFilePub}" >> "${partAuthFile}"
 fi
 
-chroot ${part2} "${qemuBin}" ${bashBin} -vc "chown -vR ${baseUser}:${baseUser} ${baseHome}"
+chroot ${partRoot} "${qemuBin}" ${bashBin} -vc "chown -vR ${baseUser}:${baseUser} ${baseHome}"
 
-chroot ${part2} "${qemuBin}" ${bashBin} -vc "chmod -v 0644 ${authFile}"
+chroot ${partRoot} "${qemuBin}" ${bashBin} -vc "chmod -v 0644 ${authFile}"
 
 fi
 
-[ ${preloadModified} -eq 1 ] && sed -i 's/^#//g' ${part2}/etc/ld.so.preload
+[ ${preloadModified} -eq 1 ] && sed -i 's/^#//g' ${partRoot}/etc/ld.so.preload
 
 wSync
 umount -v ${persistencePath}
 wSync
 
+umount ${partRoot}/{dev/pts,dev,sys,proc}
+
 wSync
-umount -v ${part1}
-umount -v ${part2}
-umount -v ${part3}
+umount -v ${partBoot}
+umount -v ${partRoot}
+umount -v ${partPersist}
 wSync
 
-rm -vrf ${part1}
-rm -vrf ${part2}
-rm -vrf ${part3}
+rm -vrf ${partBoot}
+rm -vrf ${partRoot}
+rm -vrf ${partPersist}
 
 losetup -v -d "${loopDev}"
 wSync
