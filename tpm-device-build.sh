@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -e
 
 userId=$(id -u)
 (( userId != 0 )) && echo "Current user not root. This script must be run as root user or with sudo privileges." && exit 1
