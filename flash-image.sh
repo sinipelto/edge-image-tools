@@ -59,9 +59,12 @@ fileNoExt=${imgFileZip%.*}
 imgFile="${fileNoExt}"
 imgFileUrl="${imgServer}/${imgOs}/${imgArch}/${imgFileZip}${sasToken}"
 
-{ [ -f "${imgFileZip}" ] && echo "NOTE: File already exists. No need to download."; } || curl -f -L -o "${imgFileZip}" "${imgFileUrl}"
-
-{ [ -f "${imgFile}" ] && echo "NOTE: Image file already exists. No need to unpack."; } || winpty unxz -vv -d -k "${imgFileZip}"
+if [ ! -f "${imgFile}" ]; then
+	{ [ -f "${imgFileZip}" ] && echo "NOTE: File already exists. No need to download."; } || curl -f -L -o "${imgFileZip}" "${imgFileUrl}"
+	winpty unxz -vv -d -k "${imgFileZip}"
+else
+	echo "NOTE: Image file already exists. No need to download/unpack."
+fi
 
 echo "Writing image.."
 
