@@ -391,7 +391,9 @@ chmod -v 0440 "${sudoersFile}"
 fi
 
 # Install tpm bundle both locally and on target image
-tar -xzvkf ${tpmBundleZipHost} -C /
+# TODO ensure all old files (not dirs) deleted first!
+# TODO test if works
+tar -xzvkf ${tpmBundleZipHost} -C / || true
 tar -xzvkf "${tpmBundleZip}" -C ${partRoot}
 
 # Set up swtpm state dir
