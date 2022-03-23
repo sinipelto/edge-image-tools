@@ -74,6 +74,8 @@ bashBin='/bin/bash'
 
 rootBin="${partRoot}/root/bin"
 
+rootPath="${partRoot}/root"
+netplanPath="${partRoot}/etc/netplan"
 persistencePath="${partRoot}/persistence"
 
 partParamsFile="${partRoot}/${imgParamsFile}"
@@ -97,6 +99,8 @@ wpaFile="${assetPath}/wpa_supplicant.conf"
 netFile="${assetPath}/network-config"
 userFile="${assetPath}/user-data"
 netplanFile="${assetPath}/95-network.yaml"
+
+edgeConfigFileTemplate="${assetPath}/edge-config-tpm.toml.template"
 
 cmdlineFile='cmdline.txt'
 cmdlineFile="${partBoot}/${cmdlineFile}"
@@ -352,16 +356,20 @@ rm -rf ${provBundlePath}
 tar -xzkf "${attesBundleZip}" -C .
 
 [ ! -d ${rootBin} ] && mkdir -vm 0700 ${rootBin}
+
 cp -v ${commonScript} ${rootBin}/
 cp -v ${waitforitScript} ${rootBin}/
 cp -v ${provisionScript} ${rootBin}/
 cp -v ${provTool} ${rootBin}/
 cp -v ${provClient} ${rootBin}/
+
 chmod -vR 0700 ${rootBin}
+
+cp -v ${edgeConfigFileTemplate} ${rootPath}/
 
 cp -v ${provisionServicePath} ${systemdPath}/
 
-[[ ${imgOs} == "ubuntu"* ]] && cp -v ${netplanFile} ${partRoot}/etc/netplan/
+[[ ${imgOs} == "ubuntu"* ]] && cp -v ${netplanFile} ${netplanPath}/
 
 cat > "${partParamsFile}" << EOF
 export IMAGE_VERSION='${imgVer}'
