@@ -51,7 +51,7 @@ pushd "${workingDir}"
 
 imgVer=$(curl -f -L "${imgVerFileUrl}")
 availableImages=$(curl -f -L "${imgFilesListUrl}")
-imgFileZip=$(echo "$availableImages" | tr '<>' '\n' | grep "${imgVer}")
+imgFileZip=$(echo "$availableImages" | tr '<>' '\n' | grep -E -e ".*-.*_.*_${imgVer}\..*")
 
 [ -z "${imgFileZip}" ] && echo "ERROR: Could not find the correct image file with following parameters: os: ${imgOs} arch: ${imgArch} ver: ${imgVer}. Abort." && exit 1
 
