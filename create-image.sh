@@ -460,8 +460,8 @@ sleep 1
 rm -rf ${provBundlePath}
 tar -xzf "${attesBundleZipHost}" -C .
 
-# Store results into temp files (for dev) or into null device (prod)
-[[ $devMode -eq 1 ]] && ekOutputFile='/tmp/ek_out' && regOutputFile='/tmp/rg_out'
+# Store results into persistence partition (for dev mode) or into null device (prod mode)
+[[ $devMode -eq 1 ]] && ekOutputFile="${partPersist}/endorsement_key" && regOutputFile="${partPersist}/registration_id"
 [[ $devMode -eq 0 ]] && ekOutputFile='/dev/null' && regOutputFile='/dev/null'
 
 # Test and Printout EK and RegID for curren TPM device
