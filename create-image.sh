@@ -88,7 +88,7 @@ provisionServicePath="services/${provisionService}"
 
 resizeLine='s/ init=\/usr\/lib\/raspi-config\/init_resize.sh//g'
 
-systemdPath="${partRoot}/lib/systemd/system"
+systemdPath="${partRoot}/etc/systemd/system"
 
 assetPath='image_files'
 
@@ -348,8 +348,8 @@ cp -v ${userFile} ${partBoot}/
 sed -i "${resizeLine}" ${cmdlineFile}
 
 # Extract necessary provisioning bundles for image and install them
-rm -vrf ${provBundlePath}
-tar -xzvkf "${attesBundleZip}" -C .
+rm -rf ${provBundlePath}
+tar -xzkf "${attesBundleZip}" -C .
 
 [ ! -d ${rootBin} ] && mkdir -vm 0700 ${rootBin}
 cp -v ${commonScript} ${rootBin}/
@@ -393,15 +393,11 @@ fi
 # Install tpm bundle both locally and on target image
 # TODO ensure all old files (not dirs) deleted first!
 # TODO test if works
-tar -xzvkf ${tpmBundleZipHost} -C / || true
-tar -xzvkf "${tpmBundleZip}" -C ${partRoot}
-
-# Set up swtpm state dir
-rm -vrf "${tpmStateDestHost}"
-mkdir -vm 0700 "${tpmStateDestHost}"
+tar -xzkf ${tpmBundleZipHost} -C / || true
+tar -xzkf "${tpmBundleZip}" -C ${partRoot}
 
 tpmStateDestFixed=$(echo "${tpmStateDest}" | sed 's/\//\\\//g')
-sed -i "s/<TPM_STATE_DIR>/${tpmStateDestFixed}/" ${swtpmServicePath}
+sed -i "s/<TPM_STATE_DIR>/${tpmStateDestFixed}/g" ${swtpmServicePath}
 cp -v ${swtpmServicePath} "${systemdPath}/${swtpmService}"
 
 echo "Set up systemd service for swtpm"
@@ -418,6 +414,19 @@ fi
 
 echo "Set up systemd service for tpm2-abrmd"
 
+pkill tpm2-abrmd || true
+sleep 1
+
+pkill swtpm || true
+sleep 1
+
+# Set up swtpm state dir
+rm -vrf "${tpmStateDestHost}"
+mkdir -vm 0700 "${tpmStateDestHost}"
+
+# Set up localca
+rm -vrf ${tpmLocalCaPath:?}/*
+
 swtpm_setup \
 	--runas 0 \
 	--tpmstate "${tpmStateDestHost}" \
@@ -431,7 +440,7 @@ swtpm_setup \
 	--display \
 	--vmid iotedge-base-image
 
-cp -vr ${tpmLocalCaPath}/* ${partRoot}/${tpmLocalCaPath}/
+cp -vrT ${tpmLocalCaPath} ${partRoot}/${tpmLocalCaPath}
 
 swtpm socket \
 	--runas 0 \
@@ -448,8 +457,8 @@ tpm2-abrmd -o -t 'swtpm' &
 sleep 1
 
 # Extract and install the prov client tools for host
-rm -vrf ${provBundlePath}
-tar -xzvkf "${attesBundleZipHost}" -C .
+rm -rf ${provBundlePath}
+tar -xzf "${attesBundleZipHost}" -C .
 
 # Store results into temp files (for dev) or into null device (prod)
 [[ $devMode -eq 1 ]] && ekOutputFile='/tmp/ek_out' && regOutputFile='/tmp/rg_out'
