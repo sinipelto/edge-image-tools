@@ -6,7 +6,6 @@ userId=$(id -u)
 
 paramsFile='/image_params'
 
-bashBin='/bin/bash'
 rootBin='/root/bin'
 waitBin="${rootBin}/wait-for-it.sh"
 commonBin="${rootBin}/common.sh"
@@ -166,7 +165,7 @@ configure_edge() {
 
 	echo "Set edge configuration file.."
 
-	endKey=$(cat ${ekOutputFile})
+	# endKey=$(cat ${ekOutputFile})
 	regId=$(cat ${regOutputFile})
 
 	# Set ID_SCOPE and REG_ID for communicating with 
