@@ -46,15 +46,10 @@ export VERSION_FROM_SHARE=1
 # Image names will be in format: OS_TYPE-OS_ARCH_YYYY-MM-DD_VERSION.img.xz
 # Retrieved from Azure Portal -> Storage Account -> Data storage -> File shares -> Open file share -> Properties -> URL
 export IMAGE_SERVER_URL='https://<FILESHARE>.file.core.windows.net/<SHAREPATH>'
+
 # Retrieved from Azure Portal -> Storage Account -> Security + Networking -> Shared access signature
 # -> Select services=file resources=service,container,object permissions=read,list end-expiry=future-date proto=https-only key=any -> Generate -> Copy SAS Token field
-# TODO: token FROM secure location!!
 export SAS_TOKEN_URL_QUERY='<SAS_TOKEN_URL_QUERY_PARAMS>'
-
-# For development testing, the connection string for the Azure IoT Edge device
-# Retrieved from IoT Hub -> Device Management -> IoT Edge -> Open device -> Copy connection string
-# TODO removed once there is a reliable way to transfer the connection string to the device
-export DEV_EDGE_CONNECTION_STRING='HostName=<IOT_HUB_HOST_NAME>;DeviceId=<EDGE_DEVICE_ID>;SharedAccessKey=<EDGE_DEVICE_SYMMETRIC_KEY>'
 
 # Source image OS distribution information
 # export DISTRO_NAME='Raspberry Pi OS Lite - Debian 11 (Bullseye) ARM32'
@@ -85,11 +80,6 @@ export MAINT_EMAIL='some.maintainer@company.com'
 # 2022-02-22: Does not work AT ALL -> DOES NOT BOOT (KERNEL PANIC)
 # export IMAGE_SRC_URL='https://cdimage.ubuntu.com/releases/18.04/release/ubuntu-18.04.5-preinstalled-server-arm64+raspi3.img.xz'
 
-# Ubuntu Server 20.04.3 LTS ARM64 Preinstalled Raspi 3/4
-# 2022-02-23: This works! After rovisioning process the edge device status is OK. Takes a while to set up the containers before fully up and running.
-# 2022-03-04: Does NOT EXIST anymore! See 20.04.4 LTS for an updated release!
-# export IMAGE_SRC_URL='https://cdimage.ubuntu.com/releases/20.04/release/ubuntu-20.04.3-preinstalled-server-arm64+raspi.img.xz'
-
 # Ubuntu Server 20.04.4 LTS ARM64 Preinstalled Raspi 3/4
 export IMAGE_SRC_URL='https://cdimage.ubuntu.com/releases/20.04/release/ubuntu-20.04.4-preinstalled-server-arm64+raspi.img.xz'
 
@@ -101,22 +91,7 @@ export EXPAND_ROOTFS=1
 # How many megabytes the image is expanded (NOTE: for rootfs and unallocated space in total)?
 # For raspios at least ~1 gbyte (1024 mbytes) for free space is recommended
 # For Ubuntu based images, rootfs usually have free space already ~850 Mbytes (70% of the partition size) so not as much expansion is needed (e.g. 300 Mbytes)
-
-# For Raspbian/RaspiOS images
-# export EXPAND_SIZE_MBYTES=1280
-
-# For Ubuntu images
-export EXPAND_SIZE_MBYTES=512
-
-# From the given expand size, how much should be allocate for the partition and much left unallocated after?
-# NOTE: There should be left some free unallocated space in case the rootfs minimum 
-# size will vary over different source images (to allocate space for OTA device image updates)
-# NOTE: This percentage is relative to the whole disk size!
-# Thus, the effective allocated/unallocated ratio is unkown at this point (marked as X).
-# Change the value only if truly necssary to do so.
-# The actual size of the will be
-# e.g 90% of (X + 512 MBytes =) ~3800 MBytes (whole, expanded image) == ~3420MBytes, ~380 Mbytes left unallocated with the example configuration.
-export EXPAND_PERCENTAGE=93
+export EXPAND_SIZE_MBYTES=1536
 
 # Do we want to create a partition for persistent data onto the disk image?
 # It will be created into the end of the disk image
@@ -137,7 +112,6 @@ export BASE_USER='edgeuser'
 
 # Base user local password to be set on the created user
 # Set to EMPTY string or remove the variable if the password should be DISABLED for the base user
-# TODO FROM SECURE LOCATION!
 export BASE_USER_PASS='eXaMplePaSS1234'
 
 # The public SSH key to be delivered for the created user
@@ -167,8 +141,7 @@ export SSH_KEY_FILE='base_key'
 export SMB_REMOTE_MOUNT_POINT='//<FILESHARE>.file.core.windows.net/<SHAREPATH>'
 
 # Image Storage SMB Share credentials to access the share
-# Must have read/write permissions on the share root!
-# TODO FROM SECURE LOCATION!
+# The User must have R/W permissions on the share at root level!
 export SMB_USERNAME='<SMB_USERNAME>'
 export SMB_PASSWORD='<SMB_PASSWORD>'
 
@@ -191,6 +164,6 @@ export RUN_TPM_ATTESTATION=1
 # to ensure the tpm state is not overridden/erased during an OTA image update process.
 export TPM_STATE_DEST='/persistence/vtpm'
 
-# ID scope to find the correct DPS in Azure
+# ID scope to link the correct DPS in Azure
 # See Azure -> DPS instance -> Overview -> ID Scope for the correct value
 export DPS_ID_SCOPE='0ne00000000'

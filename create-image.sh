@@ -53,7 +53,6 @@ newImgFileZip="${newImgFile}.xz"
 
 expandRootfs=${EXPAND_ROOTFS} && [ -z "${expandRootfs}" ] && echo "Variable EXPAND_ROOTFS is empty or not set." && exit 1
 growSizeMbytes=${EXPAND_SIZE_MBYTES} && [ -z "${growSizeMbytes}" ] && echo "Variable EXPAND_SIZE_MBYTES is empty or not set." && exit 1
-growPercentage=${EXPAND_PERCENTAGE} && [ -z "${growPercentage}" ] && echo "Variable EXPAND_PERCENTAGE is empty or not set." && exit 1
 
 createPersistence=${USE_PERSISTENCE} && [ -z "${createPersistence}" ] && echo "Variable USE_PERSISTENCE is empty or not set." && exit 1
 persistenceSize=${PERSISTENCE_SIZE_MBYTES} && [ -z "${persistenceSize}" ] && echo "Variable PERSISTENCE_SIZE_MBYTES is empty or not set." && exit 1
@@ -256,10 +255,6 @@ rm -vrf ${partBoot}
 rm -vrf ${partRoot}
 rm -vrf ${partPersist}
 
-mkdir -vp ${partBoot}
-mkdir -vp ${partRoot}
-mkdir -vp ${partPersist}
-
 losetup -v -D
 wSync
 
@@ -273,7 +268,7 @@ if [ "${expandRootfs}" -eq 1 ]; then
 	wSync
 
 	# shellcheck disable=SC2086
-	parted -s -a opt "${loopDev}" resizepart ${partNumRoot} ${growPercentage}%
+	parted -s -a opt "${loopDev}" resizepart ${partNumRoot} 100%
 	wSync
 
 	e2fsck -v -y -f "${loopDev}p${partNumRoot}"
@@ -321,6 +316,10 @@ fi
 loopDev=$(losetup -f)
 losetup -v -f -P ${imgFile}
 wSync
+
+mkdir -vp ${partBoot}
+mkdir -vp ${partRoot}
+mkdir -vp ${partPersist}
 
 mount -v -t vfat -o rw "${loopDev}p${partNumBoot}" ${partBoot}
 mount -v -t ext4 -o rw "${loopDev}p${partNumRoot}" ${partRoot}
@@ -378,7 +377,6 @@ export IMAGE_ARCH='${imgArch}'
 export IMAGE_VER_FILE='${imgVerFile}'
 export IMAGE_SERVER_URL='${imgServer}'
 export SAS_TOKEN_URL_QUERY='${sasToken}'
-export PERSISTENCE_MOUNT_POINT='${PERSISTENCE_MOUNT_POINT}'
 export DPS_ID_SCOPE='${DPS_ID_SCOPE}'
 EOF
 chmod -v 0444 "${partParamsFile}"
@@ -387,7 +385,7 @@ cat > ${partInfoFile} << EOF
 Image Name: Iot Edge Base Image Based on ${distroName} ${distroVer}
 Image Description: Patched generic self-provisioning image for IoT Edge devices.
 Image Maintainer: ${maintName} <${maintEmail}>
-Publish Date: $(date)
+Creation Date: $(date)
 EOF
 chmod -v 0444 ${partInfoFile}
 
