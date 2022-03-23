@@ -88,9 +88,9 @@ export IMAGE_SRC_URL='https://cdimage.ubuntu.com/releases/20.04/release/ubuntu-2
 # Also NOTE: this will affect the total size of the image file!
 export EXPAND_ROOTFS=1
 
-# How many megabytes the image is expanded (NOTE: for rootfs and unallocated space in total)?
-# For raspios at least ~1 gbyte (1024 mbytes) for free space is recommended
-# For Ubuntu based images, rootfs usually have free space already ~850 Mbytes (70% of the partition size) so not as much expansion is needed (e.g. 300 Mbytes)
+# How many megabytes the image root filesystem partition is expanded?
+# At least ~1 gbyte (1024 mbytes) is recommended to fit in
+# necessary IoT edge runtime & tools.
 export EXPAND_SIZE_MBYTES=1536
 
 # Do we want to create a partition for persistent data onto the disk image?

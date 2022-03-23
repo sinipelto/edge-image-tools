@@ -68,6 +68,8 @@ partNumBoot=1
 partNumRoot=2
 partNumPersist=3
 
+persistenceLabel='persistence'
+
 qemuBin="qemu-${imgArch}-static"
 bashBin='/bin/bash'
 
@@ -232,11 +234,11 @@ echo "New Image Version: ${imgVer}"
 
 echo ${imgVer} > "${imgVerFile}"
 
-rm -fv ./*.img
+rm -vf ./*.img
 if [ "${devMode}" -eq 1 ] && [ "${localMode}" -eq 1 ] && [ -f "${imgFileBak}" ]; then
 	cp -v ${imgFileBak} ${imgFile}
 else
-	rm -fv ${imgFileZip}
+	rm -vf ${imgFileZip}
 	curl -f -L -o ${imgFileZip} "${srcUrl}"
 	[ "${localMode}" -eq 1 ] && keepArchive='-k' || keepArchive=''
 	[[ ${srcFileExt} == "xz" ]] && unxz -vv -d "${keepArchive}" -T "${cpus}" ${imgFileZip}
@@ -260,11 +262,11 @@ wSync
 
 if [ "${expandRootfs}" -eq 1 ]; then
 	# EXPAND ROOTFS PARTITION
-	dd status=progress if=${zeroDev} bs=1M count="${growSizeMbytes}" >> ${imgFile}
+	dd status=progress if=${zeroDev} bs=1MB count="${growSizeMbytes}" >> ${imgFile}
 	wSync
 
 	loopDev=$(losetup -f)
-	losetup -v -f -P ${imgFile}
+	losetup -v -P "${loopDev}" ${imgFile}
 	wSync
 
 	# shellcheck disable=SC2086
@@ -282,7 +284,6 @@ if [ "${expandRootfs}" -eq 1 ]; then
 	wSync
 
 	losetup -v -d "${loopDev}"
-	wSync
 	losetup -v -D
 	wSync
 fi
@@ -291,11 +292,11 @@ if [ "${createPersistence}" -eq 1 ]; then
 	# CREATE PERSISTENCE PARTITION
 	ogSectors=$(blockdev --getsz ${imgFile})
 
-	dd status=progress if=${zeroDev} bs=1M count="${persistenceSize}" >> ${imgFile}
+	dd status=progress if=${zeroDev} bs=1MB count="${persistenceSize}" >> ${imgFile}
 	wSync
 
 	loopDev=$(losetup -f)
-	losetup -v -f -P ${imgFile}
+	losetup -v -P "${loopDev}" ${imgFile}
 	wSync
 
 	parted -s -a opt "${loopDev}" mkpart primary ext4 "${ogSectors}"s 100%
@@ -307,14 +308,15 @@ if [ "${createPersistence}" -eq 1 ]; then
 	e2fsck -v -y -f "${loopDev}p${partNumPersist}"
 	wSync
 
+	e2label "${loopDev}p${partNumPersist}" ${persistenceLabel}
+
 	losetup -v -d "${loopDev}"
-	wSync
 	losetup -v -D
 	wSync
 fi
 
 loopDev=$(losetup -f)
-losetup -v -f -P ${imgFile}
+losetup -v -P "${loopDev}" ${imgFile}
 wSync
 
 mkdir -vp ${partBoot}
@@ -337,8 +339,9 @@ mount --bind /proc ${partRoot}/proc/
 mount --bind /dev/pts ${partRoot}/dev/pts
 
 # Add auto mount entry to rootfs partition table
+# TODO ensure label works + cleanup
 partUuid="UUID=$(blkid "${loopDev}p${partNumPersist}" -s UUID -o value)"
-echo -e "${partUuid}\t${persistenceMount}\text4\tdefaults\t0\t2" >> ${partRoot}/etc/fstab
+echo -e "LABEL=${persistenceLabel}\t${persistenceMount}\text4\tdefaults\t0\t2" >> ${partRoot}/etc/fstab
 
 touch ${partBoot}/${sshFile}
 
@@ -551,7 +554,6 @@ rm -vrf ${partRoot}
 rm -vrf ${partPersist}
 
 losetup -v -d "${loopDev}"
-wSync
 losetup -v -D
 wSync
 
