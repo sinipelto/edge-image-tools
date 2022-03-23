@@ -185,6 +185,7 @@ configure_edge() {
 	aziotctl check
 
 	echo "Run iot edge checks.."
+	# NOTE: Fails often, might fail even when configuration works -> cant be fully trusted
 	iotedge check || true
 
 	echo "Configure iot edge specific settings done."

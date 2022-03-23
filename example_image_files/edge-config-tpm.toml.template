@@ -1,7 +1,7 @@
 auto_reprovisioning_mode = "OnErrorOnly"
 
 [provisioning]
-souce = "dps"
+source = "dps"
 global_endpoint = "https://global.azure-devices-provisioning.net"
 id_scope = "<DPS_ID_SCOPE>"
 
