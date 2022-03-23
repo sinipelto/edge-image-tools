@@ -3,19 +3,20 @@ set -e
 
 listDevices() {
 	devices=$(find /dev/ -type b -name "sd[a-z]")
-	echo -e "USAGE: ${0} <device>\nList of SCSI block devices:\n${devices}"
+	echo -e "USAGE: ${0} <flash=1> [block-device] \nList of SCSI block devices:\n${devices}"
 }
 
 # For windows machines, this check is not valid so omit it
 kernel=$(uname -a)
 kernel=${kernel,,}
 userId=$(id -u)
+
 [[ ${kernel} =~ "mingw" || ${kernel} =~ "cygwin" ]] || { (( userId != 0 )) && echo "Bash Emulator not detected and current user not root/sudo. This script must be run as root user or with sudo privileges." && exit 1; }
 
-targetDev="${1}" && [ -z "${targetDev}" ] && echo "Given targetDev is empty or not set." && listDevices && exit 1
-[[ ! -b ${targetDev} ]] && echo "Block device '${targetDev}' does not exist!" && listDevices && exit 1
+doFlash=${1} && [[ ${doFlash} != 0 && ${doFlash} != 1 ]] && echo "Invalid argument for: <flash>" && listDevices && exit 1
 
-# [[ ${targetDev} == *"sda"* || ${targetDev} == *"sdb"* || ${targetDev} == *"sdc"* ]] && echo "ERROR: Protected device." && exit 1
+[ "${doFlash}" -eq 1 ] && targetDev="${2}" && [ -z "${targetDev}" ] && echo "Given targetDev is empty or not set." && listDevices && exit 1
+[ "${doFlash}" -eq 1 ] && [[ ! -b ${targetDev} ]] && echo "Block device '${targetDev}' does not exist!" && listDevices && exit 1
 
 paramsFile='config/local_config'
 
@@ -38,15 +39,15 @@ imgVerFileUrl="${imgServer}/${imgOs}/${imgArch}/${imgVerFile}${sasToken}"
 imgFilesListUrl="${imgServer}/${imgOs}/${imgArch}${sasToken}&comp=list&restype=directory"
 
 
-#################
-##### START #####
-#################
+################################################################################
+################################	START	####################################
+################################################################################
 
 pushd "${workingDir}"
 
-read -rp "DATA LOSS WARNING! Selected device: ${targetDev}. Continue? (y/n) " ans
+[ "${doFlash}" -eq 1 ] && read -rp "DATA LOSS WARNING! Selected device: ${targetDev}. Continue? (y/n) " ans
 
-[[ ${ans} != "y" ]] && { echo "Answer was not YES. Exiting."; exit 0; }
+[ "${doFlash}" -eq 1 ] && [[ ${ans} != "y" ]] && echo "Answer was not YES. Exiting." && exit 1
 
 imgVer=$(curl -f -L "${imgVerFileUrl}")
 availableImages=$(curl -f -L "${imgFilesListUrl}")
@@ -66,17 +67,21 @@ else
 	echo "NOTE: Image file already exists. No need to download/unpack."
 fi
 
-echo "Writing image.."
+if [ "${doFlash}" -eq 1 ]; then
+	echo "Writing image.."
 
-count=0
-countMax=30
-while (( count < countMax )) && ! dd status=progress if="${imgFile}" of="${targetDev}" bs=64k; do
-	echo ""
-	(( count += 1 ))
-	sleep 1
-done
-(( count >= countMax )) && echo "ERROR: Failed to write image to device." && exit 1
+	count=0
+	countMax=30
+	while (( count < countMax )) && ! dd status=progress if="${imgFile}" of="${targetDev}" bs=64k; do
+		echo ""
+		(( count += 1 ))
+		sleep 1
+	done
+	(( count >= countMax )) && echo "ERROR: Failed to write image to device." && exit 1
 
-echo "Image written to target device."
+	echo "Image written to target device."
+fi
 
 popd
+
+echo "${0} DONE"
