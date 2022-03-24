@@ -84,6 +84,8 @@ Full run + download & extract the device image GIT BASH:
 
 ssh azvm -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo ./local-wrapper-image.sh" && echo -e '\n\n\n' && sleep 10 && ./flash-image.sh 0
 
+scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo ./local-wrapper-image.sh" && echo -e '\n\n\n' && sleep 10 && ./flash-image.sh 0
+
 
 Full run + flash the image on /dev/sdd once done, skip device prompt DANGER!!! GIT BASH:
 

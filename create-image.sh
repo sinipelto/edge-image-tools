@@ -60,9 +60,9 @@ persistenceMount=${PERSISTENCE_MOUNT_POINT:?"Variable PERSISTENCE_MOUNT_POINT is
 
 zeroDev='/dev/zero'
 
-partBoot='boot' # Boot
-partRoot='root' # Rootfs
-partPersist='persistence' # Persistence
+partBoot='mnt_boot' # Boot
+partRoot='mnt_root' # Rootfs
+partPersist='mnt_persistence' # Persistence
 
 partNumBoot=1
 partNumRoot=2
@@ -272,6 +272,7 @@ if [ "${createPersistence}" -eq 1 ]; then
 
 	rootSize=$(blockdev --getsz "${loopDev}p${partNumRoot}")
 
+	rm -vf ${rootImgFile}
 	dd status=progress if="${loopDev}p${partNumRoot}" of=${rootImgFile}
 	wSync
 
@@ -285,6 +286,7 @@ if [ "${createPersistence}" -eq 1 ]; then
 	losetup -v -D
 	wSync
 
+	partEnd=$(( partEnd + 64 ))
 	truncate --size $(( partEnd * 512 )) ${imgFile}
 	wSync
 
@@ -297,6 +299,9 @@ if [ "${createPersistence}" -eq 1 ]; then
 
 	parted -s -a opt "${loopDev}" mkpart primary ext4 ${partEnd}s 100%
 	wSync
+
+	partEnd=$(sfdisk -s -l -o End "${loopDev}" | tail -1)
+	partEnd=$(( partEnd + 1 ))
 
 	mkfs.ext4 "${loopDev}p${partNumPersist}"
 	wSync
@@ -318,24 +323,29 @@ if [ "${createPersistence}" -eq 1 ]; then
 	losetup -v -P "${loopDev}" ${imgFile}
 	wSync
 
-	partEnd=$(sfdisk -s -l -o End "${loopDev}" | tail -1)
-	partEnd=$(( partEnd + 1 ))
-
 	parted -s -a opt "${loopDev}" mkpart primary ext4 ${partEnd}s $(( partEnd + rootSize - 1 ))s
 	wSync
 
-	##### PARTNUMROOT/NEW == NULL ######
-	partNumRoot=${partNumRootNew}
-
 	partEnd=$(sfdisk -s -l -o End "${loopDev}" | tail -1)
 	partEnd=$(( partEnd + 1 ))
+
+	##### PARTNUMROOT/NEW == NULL ######
+	partNumRoot=${partNumRootNew}
 
 	losetup -v -d "${loopDev}"
 	losetup -v -D
 	wSync
 
+	loopDev=$(losetup -f)
+	losetup -v -P "${loopDev}" ${imgFile}
+	wSync
+
 	dd status=progress if=${rootImgFile} of="${loopDev}p${partNumRoot}"
 	rm -vf ${rootImgFile}
+	wSync
+
+	losetup -v -d "${loopDev}"
+	losetup -v -D
 	wSync
 
 	loopDev=$(losetup -f)
