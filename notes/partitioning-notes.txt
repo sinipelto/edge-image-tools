@@ -1,0 +1,133 @@
+#!/bin/bash
+set -ex
+
+# Synopsis:
+# Create a new partition for persistence, format as ext4
+# Move rootfs partition to the end of image
+
+####### START #######
+
+imgFile='original.img'
+imgFileBak="${imgFile}.bak"
+
+rootImgFile='rootfs.img'
+
+zeroDev='/dev/zero'
+
+partNumBoot=1
+partNumRoot=2
+partNumPersist=3
+
+partNumBootNew=1
+partNumRootNew=3
+partNumPersistNew=2
+
+rm -vf ${imgFile}
+cp -v ${imgFileBak} ${imgFile}
+
+losetup -v -D
+
+wSync
+
+loopDev=$(losetup -f)
+losetup -v -P "${loopDev}" ${imgFile}
+
+wSync
+
+rootSize=$(blockdev --getsz "${loopDev}p${partNumRoot}")
+
+dd status=progress if="${loopDev}p${partNumRoot}" of=${rootImgFile}
+
+wSync
+
+parted -s -a opt "${loopDev}" rm ${partNumRoot}
+
+wSync
+
+partEnd=$(sfdisk -s -l -o End "${loopDev}" | tail -1)
+partEnd=$(( partEnd + 1 ))
+
+losetup -v -d "${loopDev}"
+losetup -v -D
+
+wSync
+
+truncate --size $(( partEnd * 512 )) ${imgFile}
+
+wSync
+
+dd status=progress if=${zeroDev} bs=1M count=256 >> ${imgFile}
+
+wSync
+
+loopDev=$(losetup -f)
+losetup -v -P "${loopDev}" ${imgFile}
+
+wSync
+
+parted -s -a opt "${loopDev}" mkpart primary ext4 $(( partEnd ))s 100%
+
+wSync
+
+mkfs.ext4 "${loopDev}p${partNumPersistNew}"
+
+wSync
+
+e2fsck -v -y -f "${loopDev}p${partNumPersistNew}"
+
+wSync
+
+losetup -v -d "${loopDev}"
+losetup -v -D
+
+wSync
+
+dd status=progress if=${zeroDev} bs=1b count="${rootSize}" >> ${imgFile}
+dd status=progress if=${zeroDev} bs=1b count=64 >> ${imgFile}
+
+wSync
+
+loopDev=$(losetup -f)
+losetup -v -P "${loopDev}" ${imgFile}
+
+wSync
+
+partEnd=$(sfdisk -s -l -o End "${loopDev}" | tail -1)
+partEnd=$(( partEnd + 1 ))
+
+parted -s -a opt "${loopDev}" mkpart primary ext4 $(( partEnd ))s $(( partEnd + rootSize - 1 ))s
+
+wSync
+
+losetup -v -d "${loopDev}"
+losetup -v -D
+
+wSync
+
+loopDev=$(losetup -f)
+losetup -v -P "${loopDev}" ${imgFile}
+
+wSync
+
+dd status=progress if=${rootImgFile} of="${loopDev}p${partNumRootNew}"
+
+wSync
+
+losetup -v -d "${loopDev}"
+losetup -v -D
+
+wSync
+
+loopDev=$(losetup -f)
+losetup -v -P "${loopDev}" ${imgFile}
+
+wSync
+
+sfdisk -s -l "${loopDev}"
+
+e2fsck -v -y -f "${loopDev}p${partNumPersistNew}"
+e2fsck -v -y -f "${loopDev}p${partNumRootNew}"
+
+# partNumBoot=${partNumBootNew}
+# partNumRoot=${partNumRootNew}
+# partNumPersist=${partNumPersistNew}

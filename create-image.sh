@@ -60,13 +60,19 @@ persistenceMount=${PERSISTENCE_MOUNT_POINT:?"Variable PERSISTENCE_MOUNT_POINT is
 
 zeroDev='/dev/zero'
 
-partBoot='/media/boot' # Boot
-partRoot='/media/root' # Rootfs
-partPersist='/media/persistence' # Persistence
+partBoot='boot' # Boot
+partRoot='root' # Rootfs
+partPersist='persistence' # Persistence
 
 partNumBoot=1
 partNumRoot=2
-partNumPersist=3
+partNumPersist=2
+
+# After we have changed the partition layout
+# We need to assign the new numbers to target correct partitions
+partNumRootNew=3
+
+rootImgFile='rootfs.img'
 
 persistenceLabel='persistence'
 
@@ -166,7 +172,6 @@ swtpmService='tpm2-swtpm.service'
 swtpmServicePath="services/${swtpmService}.template"
 
 provBundlePath='prov_bundle'
-
 provTool="${provBundlePath}/provisioning_client/tools/tpm_device_provision/tpm_device_provision"
 provClient="${provBundlePath}/provisioning_client/samples/prov_dev_client_sample/prov_dev_client_sample"
 
@@ -179,7 +184,7 @@ cpus=$((cpus * 2))
 
 wSync() {
 	sync
-	sleep 2
+	sleep 1
 }
 
 
@@ -260,37 +265,28 @@ rm -vrf ${partPersist}
 losetup -v -D
 wSync
 
-if [ "${expandRootfs}" -eq 1 ]; then
-	# EXPAND ROOTFS PARTITION
-	dd status=progress if=${zeroDev} bs=1MB count="${growSizeMbytes}" >> ${imgFile}
-	wSync
-
+if [ "${createPersistence}" -eq 1 ]; then
 	loopDev=$(losetup -f)
 	losetup -v -P "${loopDev}" ${imgFile}
 	wSync
 
-	# shellcheck disable=SC2086
-	parted -s -a opt "${loopDev}" resizepart ${partNumRoot} 100%
+	rootSize=$(blockdev --getsz "${loopDev}p${partNumRoot}")
+
+	dd status=progress if="${loopDev}p${partNumRoot}" of=${rootImgFile}
 	wSync
 
-	e2fsck -v -y -f "${loopDev}p${partNumRoot}"
+	parted -s -a opt "${loopDev}" rm ${partNumRoot}
 	wSync
 
-	# No --verbose available
-	resize2fs "${loopDev}p${partNumRoot}"
-	wSync
-
-	e2fsck -v -y -f "${loopDev}p${partNumRoot}"
-	wSync
+	partEnd=$(sfdisk -s -l -o End "${loopDev}" | tail -1)
+	partEnd=$(( partEnd + 1 ))
 
 	losetup -v -d "${loopDev}"
 	losetup -v -D
 	wSync
-fi
 
-if [ "${createPersistence}" -eq 1 ]; then
-	# CREATE PERSISTENCE PARTITION
-	ogSectors=$(blockdev --getsz ${imgFile})
+	truncate --size $(( partEnd * 512 )) ${imgFile}
+	wSync
 
 	dd status=progress if=${zeroDev} bs=1MB count="${persistenceSize}" >> ${imgFile}
 	wSync
@@ -299,7 +295,7 @@ if [ "${createPersistence}" -eq 1 ]; then
 	losetup -v -P "${loopDev}" ${imgFile}
 	wSync
 
-	parted -s -a opt "${loopDev}" mkpart primary ext4 "${ogSectors}"s 100%
+	parted -s -a opt "${loopDev}" mkpart primary ext4 ${partEnd}s 100%
 	wSync
 
 	mkfs.ext4 "${loopDev}p${partNumPersist}"
@@ -309,9 +305,84 @@ if [ "${createPersistence}" -eq 1 ]; then
 	wSync
 
 	e2label "${loopDev}p${partNumPersist}" ${persistenceLabel}
+	wSync
 
 	losetup -v -d "${loopDev}"
 	losetup -v -D
+	wSync
+
+	dd status=progress if=${zeroDev} bs=1b count="${rootSize}" >> ${imgFile}
+	wSync
+
+	loopDev=$(losetup -f)
+	losetup -v -P "${loopDev}" ${imgFile}
+	wSync
+
+	partEnd=$(sfdisk -s -l -o End "${loopDev}" | tail -1)
+	partEnd=$(( partEnd + 1 ))
+
+	parted -s -a opt "${loopDev}" mkpart primary ext4 ${partEnd}s $(( partEnd + rootSize - 1 ))s
+	wSync
+
+	##### PARTNUMROOT/NEW == NULL ######
+	partNumRoot=${partNumRootNew}
+
+	partEnd=$(sfdisk -s -l -o End "${loopDev}" | tail -1)
+	partEnd=$(( partEnd + 1 ))
+
+	losetup -v -d "${loopDev}"
+	losetup -v -D
+	wSync
+
+	dd status=progress if=${rootImgFile} of="${loopDev}p${partNumRoot}"
+	rm -vf ${rootImgFile}
+	wSync
+
+	loopDev=$(losetup -f)
+	losetup -v -P "${loopDev}" ${imgFile}
+	wSync
+
+	e2fsck -v -y -f "${loopDev}p${partNumPersist}"
+	e2fsck -v -y -f "${loopDev}p${partNumRoot}"
+	wSync
+
+	losetup -v -d "${loopDev}"
+	losetup -v -D
+	wSync
+
+	partEnd=$(( partEnd + 64 ))
+	truncate --size $(( partEnd * 512 )) ${imgFile}
+	wSync
+fi
+
+if [ "${expandRootfs}" -eq 1 ]; then
+	# EXPAND ROOTFS PARTITION
+	dd status=progress if=${zeroDev} bs=1MB count="${growSizeMbytes}" >> ${imgFile}
+	wSync
+
+	loopDev=$(losetup -f)
+	losetup -v -P "${loopDev}" ${imgFile}
+	wSync
+
+	parted -s -a opt "${loopDev}" resizepart ${partNumRoot} 100%
+	wSync
+
+	# No --verbose available
+	resize2fs "${loopDev}p${partNumRoot}"
+	wSync
+
+	e2fsck -v -y -f "${loopDev}p${partNumRoot}"
+	wSync
+
+	partEnd=$(sfdisk -s -l -o End "${loopDev}" | tail -1)
+	partEnd=$(( partEnd + 1 ))
+
+	losetup -v -d "${loopDev}"
+	losetup -v -D
+	wSync
+
+	partEnd=$(( partEnd + 64 ))
+	truncate --size $(( partEnd * 512 )) ${imgFile}
 	wSync
 fi
 
@@ -340,7 +411,7 @@ mount --bind /dev/pts ${partRoot}/dev/pts
 
 # Add auto mount entry to rootfs partition table
 # TODO ensure label works + cleanup
-partUuid="UUID=$(blkid "${loopDev}p${partNumPersist}" -s UUID -o value)"
+# partUuid="UUID=$(blkid "${loopDev}p${partNumPersist}" -s UUID -o value)"
 echo -e "LABEL=${persistenceLabel}\t${persistenceMount}\text4\tdefaults\t0\t2" >> ${partRoot}/etc/fstab
 
 touch ${partBoot}/${sshFile}
@@ -552,6 +623,7 @@ wSync
 rm -vrf ${partBoot}
 rm -vrf ${partRoot}
 rm -vrf ${partPersist}
+rm -vrf ${persistencePath}
 
 losetup -v -d "${loopDev}"
 losetup -v -D
