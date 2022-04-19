@@ -60,9 +60,9 @@ persistenceMount=${PERSISTENCE_MOUNT_POINT:?"Variable PERSISTENCE_MOUNT_POINT is
 
 zeroDev='/dev/zero'
 
-partBoot='mnt_boot' # Boot
-partRoot='mnt_root' # Rootfs
-partPersist='mnt_persistence' # Persistence
+partBoot='/mnt_boot' # Boot
+partRoot='/mnt_root' # Rootfs
+partPersist='/mnt_persistence' # Persistence
 
 partNumBoot=1
 partNumRoot=2
@@ -148,7 +148,7 @@ partAuthFile="${partRoot}${authFile}"
 
 # Stored state dir for restoring backed up vTPM state
 tpmStateDest=${TPM_STATE_DEST:?"Variable TPM_STATE_DEST is empty or not set."}
-tpmStateDestHost=${partRoot}/${tpmStateDest}
+tpmStateDestHost=${partRoot}${tpmStateDest}
 
 # TPM software simulator or a real tpm device? 
 useTpmSim=${USE_TPM_SIMULATOR:?"Variable USE_TPM_SIMULATOR is empty or not set."}
@@ -176,7 +176,7 @@ provTool="${provBundlePath}/provisioning_client/tools/tpm_device_provision/tpm_d
 provClient="${provBundlePath}/provisioning_client/samples/prov_dev_client_sample/prov_dev_client_sample"
 
 aptPackages='coreutils bash grep util-linux curl fdisk zip unzip 
-	xz-utils binfmt-support qemu-user-static tar'
+	xz-utils binfmt-support qemu-user-static tar gnutls-bin'
 
 # Get CPU thread count for multithreading params
 cpus=$(nproc)
