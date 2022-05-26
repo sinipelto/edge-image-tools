@@ -25,6 +25,8 @@ versionFromShare=${VERSION_FROM_SHARE} && [ -z "${versionFromShare}" ] && echo "
 imgServer=${IMAGE_SERVER_URL} && [ -z "${imgServer}" ] && echo "Variable IMAGE_SERVER_URL is empty or not set." && exit 1
 sasToken=${SAS_TOKEN_URL_QUERY} && [ -z "${sasToken}" ] && echo "Variable SAS_TOKEN_URL_QUERY is empty or not set." && exit 1
 
+dpsIdScope=${DPS_ID_SCOPE} && [ -z "${dpsIdScope}" ] && echo "Variable DPS_ID_SCOPE is empty or not set." && exit 1
+
 # Complete URL for fetching the latest image version
 imgVerFileUrl=${imgServer}/${imgOs}/${imgArch}/${imgVerFile}${sasToken}
 
@@ -76,6 +78,11 @@ rootImgFile='rootfs.img'
 
 persistenceLabel='persistence'
 
+assetPath='image_files'
+templatePath='templates'
+servicePath='services'
+binPath='pre-built'
+
 qemuBin="qemu-${imgArch}-static"
 bashBin='/bin/bash'
 
@@ -93,13 +100,11 @@ waitforitScript='wait-for-it.sh'
 
 provisionScript='provision-image.sh'
 provisionService='provisioning.service'
-provisionServicePath="services/${provisionService}"
+provisionServicePath="${servicePath}/${provisionService}"
 
 resizeLine='s/ init=\/usr\/lib\/raspi-config\/init_resize.sh//g'
 
 systemdPath="${partRoot}/etc/systemd/system"
-
-assetPath='image_files'
 
 sshFile='ssh'
 wpaFile="${assetPath}/wpa_supplicant.conf"
@@ -107,7 +112,7 @@ netFile="${assetPath}/network-config"
 userFile="${assetPath}/user-data"
 netplanFile="${assetPath}/95-network.yaml"
 
-edgeConfigFileTemplate="${assetPath}/edge-config-tpm.toml.template"
+edgeConfigFileTemplate="${templatePath}/edge-config-tpm.toml.template"
 
 cmdlineFile='cmdline.txt'
 cmdlineFile="${partBoot}/${cmdlineFile}"
@@ -158,18 +163,18 @@ runTpmAttes=${RUN_TPM_ATTESTATION:?"Variable RUN_TPM_ATTESTATION is empty or not
 
 tpmLocalCaPath='/var/lib/swtpm-localca'
 
-attesBundleZipHost='pre-built/prov-bundle-ubuntu20-x86_64.tar.gz'
-attesBundleZip="pre-built/prov-bundle-${imgOs}-${imgArch}.tar.gz"
+attesBundleZipHost="${binPath}/prov-bundle-ubuntu20-x86_64.tar.gz"
+attesBundleZip="${binPath}/prov-bundle-${imgOs}-${imgArch}.tar.gz"
 
-tpmBundleZipHost='pre-built/tpm-bundle-ubuntu20-x86_64.tar.gz'
-tpmBundleZip="pre-built/tpm-bundle-${imgOs}-${imgArch}.tar.gz"
+tpmBundleZipHost="${binPath}/tpm-bundle-ubuntu20-x86_64.tar.gz"
+tpmBundleZip="${binPath}/tpm-bundle-${imgOs}-${imgArch}.tar.gz"
 
 abrmdService='tpm2-abrmd.service'
 abrmdServiceSim='tpm2-abrmd-swtpm.service'
-abrmdServiceSimPath="services/${abrmdServiceSim}"
+abrmdServiceSimPath="${servicePath}/${abrmdServiceSim}"
 
 swtpmService='tpm2-swtpm.service'
-swtpmServicePath="services/${swtpmService}.template"
+swtpmServicePath="${templatePath}/${swtpmService}.template"
 
 provBundlePath='prov_bundle'
 provTool="${provBundlePath}/provisioning_client/tools/tpm_device_provision/tpm_device_provision"
@@ -245,8 +250,9 @@ if [ "${devMode}" -eq 1 ] && [ "${localMode}" -eq 1 ] && [ -f "${imgFileBak}" ];
 else
 	rm -vf ${imgFileZip}
 	curl -f -L -o ${imgFileZip} "${srcUrl}"
-	[ "${localMode}" -eq 1 ] && keepArchive='-k' || keepArchive=''
-	[[ ${srcFileExt} == "xz" ]] && unxz -vv -d "${keepArchive}" -T "${cpus}" ${imgFileZip}
+
+	[ "${localMode}" -eq 1 ] && keepArchive='-k'
+	[[ ${srcFileExt} == "xz" ]] && unxz -vv -d ${keepArchive} -T "${cpus}" ${imgFileZip}
 	[[ ${srcFileExt} == "zip" ]] && unzip -o ${imgFileZip}
 	mv -v ./*.img ${imgFile} || true
 	[ "${devMode}" -eq 1 ] && [ "${localMode}" -eq 1 ] && cp -v ${imgFile} ${imgFile}.bak
@@ -426,7 +432,7 @@ echo -e "LABEL=${persistenceLabel}\t${persistenceMount}\text4\tdefaults\t0\t2" >
 
 touch ${partBoot}/${sshFile}
 
-cp -v ${wpaFile} ${partBoot}/
+[ -f ${wpaFile} ] && cp -v ${wpaFile} ${partBoot}/
 cp -v ${netFile} ${partBoot}/
 cp -v ${userFile} ${partBoot}/
 
@@ -461,7 +467,7 @@ export IMAGE_ARCH='${imgArch}'
 export IMAGE_VER_FILE='${imgVerFile}'
 export IMAGE_SERVER_URL='${imgServer}'
 export SAS_TOKEN_URL_QUERY='${sasToken}'
-export DPS_ID_SCOPE='${DPS_ID_SCOPE}'
+export DPS_ID_SCOPE='${dpsIdScope}'
 EOF
 chmod -v 0444 "${partParamsFile}"
 
