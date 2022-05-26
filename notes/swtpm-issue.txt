@@ -1,0 +1,151 @@
+Background info:
+
+`cat /etc/os-release`
+```bash
+NAME="Ubuntu"
+VERSION="18.04.6 LTS (Bionic Beaver)"
+ID=ubuntu
+ID_LIKE=debian
+PRETTY_NAME="Ubuntu 18.04.6 LTS"
+VERSION_ID="18.04"
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+VERSION_CODENAME=bionic
+UBUNTU_CODENAME=bionic
+```
+`uname -a`
+```bash
+Linux hostname 5.4.0-1070-azure #73~18.04.1-Ubuntu SMP Wed Feb 9 15:36:45 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
+```
+
+libtpms version: v0.9.2
+swtpm version: v0.7.1
+
+tpm2-tss version: 3.2.0
+tpm2-abrmd version: 2.4.1
+
+I'm trying to create a virtual TPM 2.0 device (simulator) for TPM attestation process for edge devices. I have managed to get the libtpms and swtpm built, installed and the swtpm running, but any attempts to connect to will fail.
+
+Built with following:
+
+```bash
+./autogen.sh --with-openssl --prefix=/usr --without-cuse --with-tss-user=root --with-tss-group=root --with-tpm2
+make clean
+make -j$(nproc)
+make check
+make install
+```
+
+Following configurations used (defaults):
+
+`cat /etc/swtpm-localca.conf`
+```bash
+statedir = /var/lib/swtpm-localca
+signingkey = /var/lib/swtpm-localca/signkey.pem
+issuercert = /var/lib/swtpm-localca/issuercert.pem
+certserial = /var/lib/swtpm-localca/certserial
+```
+`cat /etc/swtpm-localca.options`
+```bash
+--platform-manufacturer Fedora
+--platform-version 2.1
+--platform-model QEMU
+```
+`cat /etc/swtpm_setup.conf`
+```bash
+# Program invoked for creating certificates
+create_certs_tool= /usr/bin/swtpm_localca
+create_certs_tool_config = /etc/swtpm-localca.conf
+create_certs_tool_options = /etc/swtpm-localca.options
+# Comma-separated list (no spaces) of PCR banks to activate by default
+active_pcr_banks = sha256
+```
+
+Running the TPM setup:
+
+```bash
+export TPM_PATH=/tmp/vtpm
+
+mkdir -vp ${TPM_PATH}
+
+swtpm_setup \
+--runas 0 \
+--tpmstate ${TPM_PATH} \
+--tpm2 \
+--createek \
+--decryption \
+--create-ek-cert \
+--create-platform-cert \
+--lock-nvram \
+--overwrite \
+--display \
+--vmid iotedge-base-image \
+--rsa-keysize 2048
+```
+```bash
+Starting vTPM manufacturing as root:root @ Mon 07 Mar 2022 10:13:36 AM UTC
+TPM is listening on Unix socket.
+Successfully created RSA 2048 EK with handle 0x81010001.
+  Invoking /usr/bin/swtpm_localca --type ek --ek b358598878c27c85716229b96c75306784db8c8b357136800ae62baa173065186d95bd305f89c458e2d8ed76b6d6462d8dc1b51a9baedf49616e3ffe7979768a91152b6b8d5c8ffa681096f395089d238e1cba24107cf98d22e949d26b05821909599bba563064f50e2fe60e6bfbe571b7185f0eb174e230d97efdc21c72a64c77c789eb091b93594f8e4b4db9aa1a29c31f47835097180a609ec17c35935060ac71e998c810e8399de9e24046a7a0bc793bd88da7315fac0083f2c80421752d48dc5cabfaf4e73fcaeef00b64823856bc1c93693ea9041241e13584eac027579f9b594ee3af85b776ef902e7ac7d40dc2802fa3b3b34e9e32ba9535d4ae201d --dir /tmp/swtpm_setup.certs.TOEPI1 --vmid iotedge-base-image --tpm-spec-family 2.0 --tpm-spec-level 0 --tpm-spec-revision 164 --tpm-manufacturer id:00001014 --tpm-model swtpm --tpm-version id:20191023 --tpm2 --configfile /etc/swtpm-localca.conf --optsfile /etc/swtpm-localca.options
+swtpm_localca: Creating root CA and a local CA's signing key and issuer cert.
+swtpm_localca: Successfully created EK certificate locally.
+  Invoking /usr/bin/swtpm_localca --type platform --ek b358598878c27c85716229b96c75306784db8c8b357136800ae62baa173065186d95bd305f89c458e2d8ed76b6d6462d8dc1b51a9baedf49616e3ffe7979768a91152b6b8d5c8ffa681096f395089d238e1cba24107cf98d22e949d26b05821909599bba563064f50e2fe60e6bfbe571b7185f0eb174e230d97efdc21c72a64c77c789eb091b93594f8e4b4db9aa1a29c31f47835097180a609ec17c35935060ac71e998c810e8399de9e24046a7a0bc793bd88da7315fac0083f2c80421752d48dc5cabfaf4e73fcaeef00b64823856bc1c93693ea9041241e13584eac027579f9b594ee3af85b776ef902e7ac7d40dc2802fa3b3b34e9e32ba9535d4ae201d --dir /tmp/swtpm_setup.certs.TOEPI1 --vmid iotedge-base-image --tpm-spec-family 2.0 --tpm-spec-level 0 --tpm-spec-revision 164 --tpm-manufacturer id:00001014 --tpm-model swtpm --tpm-version id:20191023 --tpm2 --configfile /etc/swtpm-localca.conf --optsfile /etc/swtpm-localca.options
+swtpm_localca: Successfully created platform certificate locally.
+Successfully created NVRAM area 0x1c00002 for RSA 2048 EK certificate.
+Successfully created NVRAM area 0x1c08000 for platform certificate.
+Successfully created ECC EK with handle 0x81010016.
+  Invoking /usr/bin/swtpm_localca --type ek --ek x=bda5360c10f4ba3e3c4e53b946e2839f458587829dea9dcd52ffae455a0e54ec0519281d370fd5c3ac178589c78dfec1,y=1ee3d9478be60ebbc5dbbbfc8c34743d9d614fdf9f8bba3c3904c082acef47b768324a3aeb93e296f59d200240eb391a,id=secp384r1 --dir /tmp/swtpm_setup.certs.TOEPI1 --vmid iotedge-base-image --tpm-spec-family 2.0 --tpm-spec-level 0 --tpm-spec-revision 164 --tpm-manufacturer id:00001014 --tpm-model swtpm --tpm-version id:20191023 --tpm2 --configfile /etc/swtpm-localca.conf --optsfile /etc/swtpm-localca.options
+swtpm_localca: Successfully created EK certificate locally.
+Successfully created NVRAM area 0x1c00016 for ECC EK certificate.
+Successfully activated PCR banks sha256 among sha1,sha256,sha384,sha512.
+Successfully authored TPM state.
+Ending vTPM manufacturing @ Mon 07 Mar 2022 10:13:37 AM UTC
+```
+
+`ls -lA /tmp/vtpm/`
+```bash
+total 8
+-rw-r----- 1 root root    0  .lock
+-rw-r----- 1 root root 6035  tpm2-00.permall
+```
+
+`ls -lA /var/lib/swtpm-localca/`
+```bash
+total 28
+-rwxr-xr-x 1 root root    0  .lock.swtpm-localca
+-rw-r--r-- 1 root root    1  certserial
+-rw-r--r-- 1 root root 1497  issuercert.pem
+-rw-r----- 1 root root 8180  signkey.pem
+-rw-r--r-- 1 root root 1460  swtpm-localca-rootca-cert.pem
+-rw-r----- 1 root root 8169  swtpm-localca-rootca-privkey.pem
+```
+
+Starting the swtpm tpm device + control server:
+
+```bash
+swtpm socket \
+--daemon \
+--server type=tcp,port=2321,disconnect \
+--ctrl type=tcp,port=2322 \
+--tpmstate dir=${TPM_PATH} \
+--tpm2 \
+--flags not-need-init,startup-clear \
+--runas 0 \
+--log file=${PWD}/tpm.log,level=20,truncate
+```
+
+`pgrep -af swtpm` shows that the process is running.
+
+Trying to start a resource manager for the TPM:
+
+`resourcemgr -sim`
+```bash
+socket created:  0x3
+socket created:  0x4
+Client connected to server on port:  2322
+Client connected to server on port:  2321
+PlatformCommand failed with error: -1
+Resource Mgr, socket TCTI, failed initialization: 0xa000a.  Exiting...
+```
