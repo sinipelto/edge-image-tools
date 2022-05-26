@@ -4,7 +4,7 @@ This directory contains all global and shared configurations for the scripts to 
 
 ## Structure
 
-local_config - Configuration file containing variables suitable for local execution of the scripts. 
+local_config - Configuration file containing environment variables suitable for local execution of the repo scripts without a devops pipeline.
 
 ## Usage instructions
 
