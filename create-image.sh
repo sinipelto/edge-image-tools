@@ -60,6 +60,16 @@ createPersistence=${USE_PERSISTENCE} && [ -z "${createPersistence}" ] && echo "V
 persistenceSize=${PERSISTENCE_SIZE_MBYTES} && [ -z "${persistenceSize}" ] && echo "Variable PERSISTENCE_SIZE_MBYTES is empty or not set." && exit 1
 persistenceMount=${PERSISTENCE_MOUNT_POINT:?"Variable PERSISTENCE_MOUNT_POINT is empty or not set."}
 
+wlanSsid=${WLAN_SSID:?"Variable WLAN_SSID is empty or not set."}
+wlanPassword=${WLAN_PASSWORD:?"Variable WLAN_PASSWORD is empty or not set."}
+
+countryCode=${COUNTRYCODE_UPPER_2LETTER:?"Variable COUNTRYCODE_UPPER_2LETTER is empty or not set."}
+localeCode=${LOCALE_LOWER_2LETTER:?"Variable LOCALE_LOWER_2LETTER is empty or not set."}
+
+timezone=${TIMEZONE:?"Variable TIMEZONE is empty or not set."}
+
+deviceHostname=${DEVICE_HOSTNAME:?"Variable DEVICE_HOSTNAME is empty or not set."}
+
 zeroDev='/dev/zero'
 
 partBoot='/mnt_boot' # Boot
@@ -78,7 +88,6 @@ rootImgFile='rootfs.img'
 
 persistenceLabel='persistence'
 
-assetPath='image_files'
 templatePath='templates'
 servicePath='services'
 binPath='pre-built'
@@ -107,10 +116,22 @@ resizeLine='s/ init=\/usr\/lib\/raspi-config\/init_resize.sh//g'
 systemdPath="${partRoot}/etc/systemd/system"
 
 sshFile='ssh'
-wpaFile="${assetPath}/wpa_supplicant.conf"
-netFile="${assetPath}/network-config"
-userFile="${assetPath}/user-data"
-netplanFile="${assetPath}/95-network.yaml"
+netFile='network-config'
+netplanFile='90-network.yaml'
+wpaFile='wpa_supplicant.conf'
+userFile='user-data'
+
+netFileTemplate="${templatePath}/${netFile}.template"
+netplanFileTemplate="${templatePath}/${netplanFile}.template"
+wpaFileTemplate="${templatePath}/${wpaFile}.template"
+userFileTemplate="${templatePath}/${userFile}.template"
+
+wlanSsidReplaceLine='<WLAN_SSID>'
+wlanPasswordReplaceLine='<WLAN_PASSWORD>'
+countryCodeReplaceLine='<COUNTRYCODE_UPPER_2LETTER>'
+localeCodeReplaceLine='<LOCALE_LOWER_2LETTER>'
+hostnameReplaceLine='<DEVICE_HOSTNAME>'
+timezoneReplaceLine='<TIMEZONE>'
 
 edgeConfigFileTemplate="${templatePath}/edge-config-tpm.toml.template"
 
@@ -432,9 +453,24 @@ echo -e "LABEL=${persistenceLabel}\t${persistenceMount}\text4\tdefaults\t0\t2" >
 
 touch ${partBoot}/${sshFile}
 
-[ -f ${wpaFile} ] && cp -v ${wpaFile} ${partBoot}/
-cp -v ${netFile} ${partBoot}/
-cp -v ${userFile} ${partBoot}/
+sed -i "s/${wlanSsidReplaceLine}/${wlanSsid}/g" ${netFileTemplate}
+sed -i "s/${wlanSsidReplaceLine}/${wlanSsid}/g" ${netplanFileTemplate}
+sed -i "s/${wlanSsidReplaceLine}/${wlanSsid}/g" ${wpaFileTemplate}
+
+sed -i "s/${wlanPasswordReplaceLine}/${wlanPassword}/g" ${netFileTemplate}
+sed -i "s/${wlanPasswordReplaceLine}/${wlanPassword}/g" ${netplanFileTemplate}
+sed -i "s/${wlanPasswordReplaceLine}/${wlanPassword}/g" ${wpaFileTemplate}
+
+sed -i "s/${countryCodeReplaceLine}/${countryCode}/g" ${userFileTemplate}
+sed -i "s/${countryCodeReplaceLine}/${countryCode}/g" ${wpaFileTemplate}
+
+sed -i "s/${localeCodeReplaceLine}/${localeCode}/g" ${userFileTemplate}
+sed -i "s/${hostnameReplaceLine}/${deviceHostname}/g" ${userFileTemplate}
+sed -i "s/${timezoneReplaceLine}/${timezone}/g" ${userFileTemplate}
+
+cp -v ${wpaFileTemplate} ${partBoot}/${wpaFile}
+cp -v ${netFileTemplate} ${partBoot}/${netFile}
+cp -v ${userFileTemplate} ${partBoot}/${userFile}
 
 # NOTE: If disabled part+fs resizing => no free space left on rootfs with RaspiOS!
 # Solution: For raspios the rootfs partition + fs is resized
@@ -458,7 +494,7 @@ cp -v ${edgeConfigFileTemplate} ${rootPath}/
 
 cp -v ${provisionServicePath} ${systemdPath}/
 
-[[ ${imgOs} == "ubuntu"* ]] && cp -v ${netplanFile} ${netplanPath}/
+[[ ${imgOs} == "ubuntu"* ]] && cp -v ${netplanFileTemplate} ${netplanPath}/${netplanFile}
 
 cat > "${partParamsFile}" << EOF
 export IMAGE_VERSION='${imgVer}'

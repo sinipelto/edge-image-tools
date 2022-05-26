@@ -108,6 +108,31 @@ export PERSISTENCE_SIZE_MBYTES=1024
 # This location will be configured in the /etc/fstab file.
 export PERSISTENCE_MOUNT_POINT='/persistence'
 
+# Use the following SSID and credentials to authenticate into a WLAN access point.
+# Should be always set (required), even though not used to generate the configuration files properly.
+# Fallbacks to Ethernet DHCP connection in case cannot connect to the WLAN spcecified access point.
+# Should NOT be used BOTH wired Ethernet AND WLAN access point SIMULTANEOUSLY.
+export WLAN_SSID='<WLAN_SSID>'
+export WLAN_PASSWORD='<WLAN_PASSWORD>'
+
+# Set the device designed country.
+# Where is the device physcially located?
+export COUNTRYCODE_UPPER_2LETTER='<COUNTRYCODE_UPPER_2LETTER>'
+
+# Set the physical keyboard etc. system locale country code.
+# What keyboard layout the device should use?
+export LOCALE_LOWER_2LETTER='<LOCALE_LOWER_2LETTER>'
+
+# Local system hostname for the device.
+# NOTE: Is NOT same as the network hostname (DNS name)
+export DEVICE_HOSTNAME='<DEVICE_HOSTNAME>'
+
+# Device timezone to set clock to
+# What is the current timezone in the device location?
+# If timezone needed to be UTC 0, could be set to UTC
+# Otherwsie the format is: Continent/City
+export TIMEZONE='<TIMEZONE>'
+
 # User name for the created user
 # Set to EMPTY string or remove the variable if the new user should NOT be created
 export BASE_USER='edgeuser'
