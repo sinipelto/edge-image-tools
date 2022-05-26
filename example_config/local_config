@@ -150,6 +150,8 @@ export SMB_PASSWORD='<SMB_PASSWORD>'
 # All processes expect that a virtual software tpm solution is used
 # A TPM simulator is built and installed on the target image
 # The TPM Software stack will use tpm simulator driver instead of real one
+# Change the value to 0 if using a real TPM chip
+# The chosen TPM chip needs to be supported by the TPM2.0 standard, and tpm2-abrmd resource manager.
 export USE_TPM_SIMULATOR=1
 
 # Do we pre-register the TPM information (Registration ID and Endorsement Key)

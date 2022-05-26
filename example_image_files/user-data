@@ -1,5 +1,5 @@
 #cloud-config
-hostname: iotedgepi
+hostname: <DEVICE_HOSTNAME>
 manage_etc_hosts: true
 packages:
 - avahi-daemon
@@ -9,9 +9,9 @@ apt:
       Check-Date "false";
     };
 
-timezone: Europe/Helsinki
+timezone: <CURRENT_TIMEZONE>
 runcmd:
-- sed -i 's/^s*REGDOMAIN=S*/REGDOMAIN=FI/' /etc/default/crda || true
+- sed -i 's/^s*REGDOMAIN=S*/REGDOMAIN=<CURRENT_COUNTRYCODE_2LETTER>/' /etc/default/crda || true
 - rm -f /etc/xdg/autostart/piwiz.desktop
-- localectl set-x11-keymap "fi" pc105
+- localectl set-x11-keymap "<CURRENT_LOCALE>" pc105
 - setupcon -k --force || true
