@@ -6,6 +6,9 @@ trigger:
 pool:
   vmImage: ubuntu-20.04
 
+variables:
+- group: edge-image-deployment
+
 steps:
 - task: Bash@3
   inputs:
