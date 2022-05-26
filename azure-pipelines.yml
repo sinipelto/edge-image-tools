@@ -1,0 +1,113 @@
+# Create, configure and publish the disk image for Azure IoT Edge into Azure file share.
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-20.04
+
+steps:
+- task: Bash@3
+  inputs:
+    targetType: inline
+    script: 'sudo chmod +x *.sh'
+    failOnStderr: true
+  displayName: 'Ensure shell scripts are executable.'
+
+- task: Bash@3
+  inputs:
+    targetType: inline
+    script: 'sudo -E ./create-image.sh'
+    failOnStderr: false
+  displayName: 'Execute script create-image.sh'
+  env:
+    LOCAL_MODE: 0
+    DEV_MODE: $(DevMode)
+    IMAGE_OS: $(ImageOs)
+    IMAGE_ARCH: $(ImageArch)
+    IMAGE_VER_FILE: $(ImageVerFile)
+    INITIAL_VERSION: $(InitialVersion)
+    MINOR_MAX: $(MinorMax)
+    REV_MAX: $(RevMax)
+    IMAGE_PARAMS_FILE: $(ImageParamsFile)
+    DEST_IMG_FILE: $(DestImgFile)
+    VERSION_FROM_SHARE: $(VersionFromShare)
+    IMAGE_SERVER_URL: $(ImageServerUrl)
+    SAS_TOKEN_URL_QUERY: $(SasTokenUrlQuery)
+    DISTRO_NAME: $(DistroName)
+    DISTRO_VERSION: $(DistroVersion)
+    MAINT_NAME: $(MaintName)
+    MAINT_EMAIL: $(MaintEmail)
+    IMAGE_SRC_URL: $(ImageSrcUrl)
+    EXPAND_ROOTFS: $(ExpandRootfs)
+    EXPAND_SIZE_MBYTES: $(ExpandSizeMbytes)
+    USE_PERSISTENCE: $(UsePersistence)
+    PERSISTENCE_SIZE_MBYTES: $(PersistenceSizeMbytes)
+    PERSISTENCE_MOUNT_POINT: $(PersistenceMountPoint)
+    BASE_USER: $(BaseUser)
+    BASE_USER_PASS: $(BaseUserPass)
+    SSH_PUBLIC_KEY: $(SshPublicKey)
+    DEL_OG_USER: $(DelOgUser)
+    CREATE_LOCAL_SSH_KEY: $(CreateLocalSshKey)
+    SSH_KEY_TYPE: $(SShKeyType)
+    SSH_KEY_ROUNDS: $(SshKeyRounds)
+    SSH_KEY_BITS: $(SshKeyBits)
+    SSH_KEY_PHRASE: $(SshKeyPhrase)
+    SSH_KEY_COMMENT: $(SshKeyComment)
+    SSH_KEY_FILE: $(SshKeyFile)
+    SMB_REMOTE_MOUNT_POINT: $(SmbRemoteMountPoint)
+    SMB_USERNAME: $(SmbUsername)
+    SMB_PASSWORD: $(SmbPassword)
+    USE_TPM_SIMULATOR: $(UseTpmSimulator)
+    RUN_TPM_ATTESTATION: $(RunTpmAttestation)
+    TPM_STATE_DEST: $(TpmStateDest)
+    DPS_ID_SCOPE: $(DpsIdScope)
+
+- task: Bash@3
+  inputs:
+    targetType: inline
+    script: 'sudo -E ./publish-image.sh'
+    failOnStderr: false
+  displayName: 'Execute script publish-image.sh'
+  env:
+    LOCAL_MODE: 0
+    DEV_MODE: $(DevMode)
+    IMAGE_OS: $(ImageOs)
+    IMAGE_ARCH: $(ImageArch)
+    IMAGE_VER_FILE: $(ImageVerFile)
+    INITIAL_VERSION: $(InitialVersion)
+    MINOR_MAX: $(MinorMax)
+    REV_MAX: $(RevMax)
+    IMAGE_PARAMS_FILE: $(ImageParamsFile)
+    DEST_IMG_FILE: $(DestImgFile)
+    VERSION_FROM_SHARE: $(VersionFromShare)
+    IMAGE_SERVER_URL: $(ImageServerUrl)
+    SAS_TOKEN_URL_QUERY: $(SasTokenUrlQuery)
+    DISTRO_NAME: $(DistroName)
+    DISTRO_VERSION: $(DistroVersion)
+    MAINT_NAME: $(MaintName)
+    MAINT_EMAIL: $(MaintEmail)
+    IMAGE_SRC_URL: $(ImageSrcUrl)
+    EXPAND_ROOTFS: $(ExpandRootfs)
+    EXPAND_SIZE_MBYTES: $(ExpandSizeMbytes)
+    USE_PERSISTENCE: $(UsePersistence)
+    PERSISTENCE_SIZE_MBYTES: $(PersistenceSizeMbytes)
+    PERSISTENCE_MOUNT_POINT: $(PersistenceMountPoint)
+    BASE_USER: $(BaseUser)
+    BASE_USER_PASS: $(BaseUserPass)
+    SSH_PUBLIC_KEY: $(SshPublicKey)
+    DEL_OG_USER: $(DelOgUser)
+    CREATE_LOCAL_SSH_KEY: $(CreateLocalSshKey)
+    SSH_KEY_TYPE: $(SShKeyType)
+    SSH_KEY_ROUNDS: $(SshKeyRounds)
+    SSH_KEY_BITS: $(SshKeyBits)
+    SSH_KEY_PHRASE: $(SshKeyPhrase)
+    SSH_KEY_COMMENT: $(SshKeyComment)
+    SSH_KEY_FILE: $(SshKeyFile)
+    SMB_REMOTE_MOUNT_POINT: $(SmbRemoteMountPoint)
+    SMB_USERNAME: $(SmbUsername)
+    SMB_PASSWORD: $(SmbPassword)
+    USE_TPM_SIMULATOR: $(UseTpmSimulator)
+    RUN_TPM_ATTESTATION: $(RunTpmAttestation)
+    TPM_STATE_DEST: $(TpmStateDest)
+    DPS_ID_SCOPE: $(DpsIdScope)
