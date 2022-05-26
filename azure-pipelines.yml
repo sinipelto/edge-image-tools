@@ -1,7 +1,7 @@
 # Create, configure and publish the disk image for Azure IoT Edge into Azure file share.
 
 trigger:
-- main
+- publish
 
 pool:
   vmImage: ubuntu-20.04
