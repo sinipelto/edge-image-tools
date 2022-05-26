@@ -1,10 +1,12 @@
 # edge-image-tools
 
+## General information
+
 Imaging tools for creating and publishing images ready for Azure IoT Edge.
 
 Designed to be run in a pipeline, using e.g. Azure pipelines.
 
-## About repository structure
+## Repository structure
 
 ### Directories:
 
@@ -24,7 +26,7 @@ Designed to be run in a pipeline, using e.g. Azure pipelines.
 * provisioning.service - Provides the systemd service configuration wrapper for the provisioning service script.
 * wait-for-it.sh - A utility script for waiting for a specific host and port to be available over network connection. Useful for testing network access to critical services.
 
-## Running locally
+## Execution locally
 
 To run the scripts locally:
 
@@ -56,3 +58,34 @@ Finally, execute the wrapper script:
 ```bash
 /bin/bash local-wrapper-image.sh
 ```
+
+## Execution using devops pipeline
+
+To run the scripts in a pipeline
+
+Ensure following requirements met:
+- Compatible build agent and OS with sudo/root privileges (Currently Ubuntu 18.04/20.04 LTS supported)
+- Target cloud file storage available and enough free space (Currently Azure File Share as SMB mount point supported)
+
+Currently implemented pipelines:
+- Azure DevOps Pipelines (see azure-pipelines.yml for reference)
+
+Construct the pipeline configuration with at least following stages/jobs:
+- execute script create-image.sh for creating the image file
+- execute publish-image.sh for publishing the image in the cloud file share
+- ensure necessary environment variables set for both scripts (see example_config/local_config file for variable reference)
+
+In case a different publishing solution is needed, create a separate publish script
+and execute it in the pipeline instead.
+
+### Using the existing Azure Devops Pipeline configuration
+
+Import this repo in Azure Devops Repos section.
+
+Ensure the pipeline configuration (azure-pipelines.yml) is recognized by the Azure environment, and create a pipeline instance for it.
+
+Set the necessary environment variables through the Azure Pipeline variables (ensure any secrets are marked as secret variables).
+
+Configure a build agent for the pipeline (Microsoft hosted build agent with ubuntu-20.04 recommended).
+
+Execute the pipeline to build and publish an image to a configured cloud storage.
