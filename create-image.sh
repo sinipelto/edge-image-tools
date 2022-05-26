@@ -67,7 +67,7 @@ countryCode=${COUNTRYCODE_UPPER_2LETTER:?"Variable COUNTRYCODE_UPPER_2LETTER is 
 localeCode=${LOCALE_LOWER_2LETTER:?"Variable LOCALE_LOWER_2LETTER is empty or not set."}
 
 timezone=${TIMEZONE:?"Variable TIMEZONE is empty or not set."}
-timezone=$(echo "${timezone}" | sed 's/\//\\\//g')
+timezone=${timezone//\//\\/}
 
 deviceHostname=${DEVICE_HOSTNAME:?"Variable DEVICE_HOSTNAME is empty or not set."}
 
@@ -127,12 +127,19 @@ netplanFileTemplate="${templatePath}/${netplanFile}.template"
 wpaFileTemplate="${templatePath}/${wpaFile}.template"
 userFileTemplate="${templatePath}/${userFile}.template"
 
-wlanSsidReplaceLine='<WLAN_SSID>'
-wlanPasswordReplaceLine='<WLAN_PASSWORD>'
-countryCodeReplaceLine='<COUNTRYCODE_UPPER_2LETTER>'
-localeCodeReplaceLine='<LOCALE_LOWER_2LETTER>'
-hostnameReplaceLine='<DEVICE_HOSTNAME>'
-timezoneReplaceLine='<TIMEZONE>'
+wlanSsidReplaceVar='<WLAN_SSID>'
+wlanPasswordReplaceVar='<WLAN_PASSWORD>'
+countryCodeReplaceVar='<COUNTRYCODE_UPPER_2LETTER>'
+localeCodeReplaceVar='<LOCALE_LOWER_2LETTER>'
+hostnameReplaceVar='<DEVICE_HOSTNAME>'
+timezoneReplaceVar='<TIMEZONE>'
+
+wlanSsidReplaceLine="s/${wlanSsidReplaceVar}/${wlanSsid}/g"
+wlanPasswordReplaceLine="s/${wlanPasswordReplaceVar}/${wlanPassword}/g"
+countryCodeReplaceLine="s/${countryCodeReplaceVar}/${countryCode}/g"
+localeCodeReplaceLine="s/${localeCodeReplaceVar}/${localeCode}/g"
+hostnameReplaceLine="s/${hostnameReplaceVar}/${deviceHostname}/g"
+timezoneReplaceLine="s/${timezoneReplaceVar}/${timezone}/g"
 
 edgeConfigFileTemplate="${templatePath}/edge-config-tpm.toml.template"
 
@@ -175,7 +182,7 @@ partAuthFile="${partRoot}${authFile}"
 
 # Stored state dir for restoring backed up vTPM state
 tpmStateDest=${TPM_STATE_DEST:?"Variable TPM_STATE_DEST is empty or not set."}
-tpmStateDest=$(echo "${tpmStateDest}" | sed 's/\//\\\//g')
+tpmStateDest=${tpmStateDest//\//\\/}
 
 tpmStateDestHost=${partRoot}${tpmStateDest}
 
@@ -456,20 +463,20 @@ echo -e "LABEL=${persistenceLabel}\t${persistenceMount}\text4\tdefaults\t0\t2" >
 
 touch ${partBoot}/${sshFile}
 
-sed -i "s/${wlanSsidReplaceLine}/${wlanSsid}/g" ${netFileTemplate}
-sed -i "s/${wlanSsidReplaceLine}/${wlanSsid}/g" ${netplanFileTemplate}
-sed -i "s/${wlanSsidReplaceLine}/${wlanSsid}/g" ${wpaFileTemplate}
+sed -i "${wlanSsidReplaceLine}" ${netFileTemplate}
+sed -i "${wlanSsidReplaceLine}" ${netplanFileTemplate}
+sed -i "${wlanSsidReplaceLine}" ${wpaFileTemplate}
 
-sed -i "s/${wlanPasswordReplaceLine}/${wlanPassword}/g" ${netFileTemplate}
-sed -i "s/${wlanPasswordReplaceLine}/${wlanPassword}/g" ${netplanFileTemplate}
-sed -i "s/${wlanPasswordReplaceLine}/${wlanPassword}/g" ${wpaFileTemplate}
+sed -i "${wlanPasswordReplaceLine}" ${netFileTemplate}
+sed -i "${wlanPasswordReplaceLine}" ${netplanFileTemplate}
+sed -i "${wlanPasswordReplaceLine}" ${wpaFileTemplate}
 
-sed -i "s/${countryCodeReplaceLine}/${countryCode}/g" ${userFileTemplate}
-sed -i "s/${countryCodeReplaceLine}/${countryCode}/g" ${wpaFileTemplate}
+sed -i "${countryCodeReplaceLine}" ${userFileTemplate}
+sed -i "${countryCodeReplaceLine}" ${wpaFileTemplate}
 
-sed -i "s/${localeCodeReplaceLine}/${localeCode}/g" ${userFileTemplate}
-sed -i "s/${hostnameReplaceLine}/${deviceHostname}/g" ${userFileTemplate}
-sed -i "s/${timezoneReplaceLine}/${timezone}/g" ${userFileTemplate}
+sed -i "${localeCodeReplaceLine}" ${userFileTemplate}
+sed -i "${hostnameReplaceLine}" ${userFileTemplate}
+sed -i "${timezoneReplaceLine}" ${userFileTemplate}
 
 cp -v ${wpaFileTemplate} ${partBoot}/${wpaFile}
 cp -v ${netFileTemplate} ${partBoot}/${netFile}
