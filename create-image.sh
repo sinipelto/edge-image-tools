@@ -67,6 +67,7 @@ countryCode=${COUNTRYCODE_UPPER_2LETTER:?"Variable COUNTRYCODE_UPPER_2LETTER is 
 localeCode=${LOCALE_LOWER_2LETTER:?"Variable LOCALE_LOWER_2LETTER is empty or not set."}
 
 timezone=${TIMEZONE:?"Variable TIMEZONE is empty or not set."}
+timezone=$(echo "${timezone}" | sed 's/\//\\\//g')
 
 deviceHostname=${DEVICE_HOSTNAME:?"Variable DEVICE_HOSTNAME is empty or not set."}
 
@@ -174,6 +175,8 @@ partAuthFile="${partRoot}${authFile}"
 
 # Stored state dir for restoring backed up vTPM state
 tpmStateDest=${TPM_STATE_DEST:?"Variable TPM_STATE_DEST is empty or not set."}
+tpmStateDest=$(echo "${tpmStateDest}" | sed 's/\//\\\//g')
+
 tpmStateDestHost=${partRoot}${tpmStateDest}
 
 # TPM software simulator or a real tpm device? 
@@ -528,8 +531,7 @@ fi
 tar -xzkf ${tpmBundleZipHost} -C / || true
 tar -xzkf "${tpmBundleZip}" -C ${partRoot}
 
-tpmStateDestFixed=$(echo "${tpmStateDest}" | sed 's/\//\\\//g')
-sed -i "s/<TPM_STATE_DIR>/${tpmStateDestFixed}/g" ${swtpmServicePath}
+sed -i "s/<TPM_STATE_DIR>/${tpmStateDest}/g" ${swtpmServicePath}
 cp -v ${swtpmServicePath} "${systemdPath}/${swtpmService}"
 
 echo "Set up systemd service for swtpm"
