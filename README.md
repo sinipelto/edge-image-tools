@@ -1,5 +1,7 @@
 # edge-image-tools
 
+[![Build Status](https://dev.azure.com/ThesisPoC/EdgeImageTools/_apis/build/status/EdgeImageTools?branchName=publish)](https://dev.azure.com/ThesisPoC/EdgeImageTools/_build/latest?definitionId=3&branchName=publish)
+
 ## General information
 
 Imaging tools for creating and publishing images ready for Azure IoT Edge.
