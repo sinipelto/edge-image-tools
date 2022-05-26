@@ -67,7 +67,6 @@ countryCode=${COUNTRYCODE_UPPER_2LETTER:?"Variable COUNTRYCODE_UPPER_2LETTER is 
 localeCode=${LOCALE_LOWER_2LETTER:?"Variable LOCALE_LOWER_2LETTER is empty or not set."}
 
 timezone=${TIMEZONE:?"Variable TIMEZONE is empty or not set."}
-timezone=${timezone//\//\\/}
 
 deviceHostname=${DEVICE_HOSTNAME:?"Variable DEVICE_HOSTNAME is empty or not set."}
 
@@ -134,12 +133,12 @@ localeCodeReplaceVar='<LOCALE_LOWER_2LETTER>'
 hostnameReplaceVar='<DEVICE_HOSTNAME>'
 timezoneReplaceVar='<TIMEZONE>'
 
-wlanSsidReplaceLine="s/${wlanSsidReplaceVar}/${wlanSsid}/g"
-wlanPasswordReplaceLine="s/${wlanPasswordReplaceVar}/${wlanPassword}/g"
-countryCodeReplaceLine="s/${countryCodeReplaceVar}/${countryCode}/g"
-localeCodeReplaceLine="s/${localeCodeReplaceVar}/${localeCode}/g"
-hostnameReplaceLine="s/${hostnameReplaceVar}/${deviceHostname}/g"
-timezoneReplaceLine="s/${timezoneReplaceVar}/${timezone}/g"
+wlanSsidReplaceLine="s/${wlanSsidReplaceVar}/${wlanSsid//\//\\/}/g"
+wlanPasswordReplaceLine="s/${wlanPasswordReplaceVar}/${wlanPassword//\//\\/}/g"
+countryCodeReplaceLine="s/${countryCodeReplaceVar}/${countryCode//\//\\/}/g"
+localeCodeReplaceLine="s/${localeCodeReplaceVar}/${localeCode//\//\\/}/g"
+hostnameReplaceLine="s/${hostnameReplaceVar}/${deviceHostname//\//\\/}/g"
+timezoneReplaceLine="s/${timezoneReplaceVar}/${timezone//\//\\/}/g"
 
 edgeConfigFileTemplate="${templatePath}/edge-config-tpm.toml.template"
 
@@ -182,9 +181,10 @@ partAuthFile="${partRoot}${authFile}"
 
 # Stored state dir for restoring backed up vTPM state
 tpmStateDest=${TPM_STATE_DEST:?"Variable TPM_STATE_DEST is empty or not set."}
-tpmStateDest=${tpmStateDest//\//\\/}
 
 tpmStateDestHost=${partRoot}${tpmStateDest}
+
+tpmStateDestReplaceLine="s/<TPM_STATE_DIR>/${tpmStateDest//\//\\/}/g"
 
 # TPM software simulator or a real tpm device? 
 useTpmSim=${USE_TPM_SIMULATOR:?"Variable USE_TPM_SIMULATOR is empty or not set."}
@@ -538,7 +538,7 @@ fi
 tar -xzkf ${tpmBundleZipHost} -C / || true
 tar -xzkf "${tpmBundleZip}" -C ${partRoot}
 
-sed -i "s/<TPM_STATE_DIR>/${tpmStateDest}/g" ${swtpmServicePath}
+sed -i "${tpmStateDestReplaceLine}" ${swtpmServicePath}
 cp -v ${swtpmServicePath} "${systemdPath}/${swtpmService}"
 
 echo "Set up systemd service for swtpm"
