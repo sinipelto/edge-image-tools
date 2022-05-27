@@ -21,18 +21,18 @@ ssh azvm -C "sudo apt -y update && sudo apt -y install shellcheck && sudo rm -vr
 
 Copy and run TPM simulator setup script GIT BASH:
 
-ssh azvm -C "sudo rm -vrf simulator && mkdir -vm 0755 simulator" && scp -r * azvm:simulator/ && ssh azvm -C "echo -e '\n\n\n' && cd simulator && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-device-build.sh / 0'"
+ssh azvm -C "sudo rm -vrf simulator && mkdir -vm 0755 simulator" && scp -r * azvm:simulator/ && ssh azvm -C "echo -e '\n\n\n' && cd simulator && sudo chmod -v +x *.sh && sudo bash -c 'source local/local_config && ./tpm-device-build.sh / 0'"
 
-scp -r * azvm:simulator/ && ssh azvm -C "echo -e '\n\n\n' && cd simulator && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-device-build.sh / 0'"
+scp -r * azvm:simulator/ && ssh azvm -C "echo -e '\n\n\n' && cd simulator && sudo chmod -v +x *.sh && sudo bash -c 'source local/local_config && ./tpm-device-build.sh / 0'"
 
 
 
 
 Copy and run TPM attestation script GIT BASH:
 
-ssh azvm -C "sudo rm -vrf attestation && mkdir -vm 0755 attestation" && scp -r * azvm:attestation/ && ssh azvm -C "echo -e '\n\n\n' && cd attestation && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-attestation-build.sh'"
+ssh azvm -C "sudo rm -vrf attestation && mkdir -vm 0755 attestation" && scp -r * azvm:attestation/ && ssh azvm -C "echo -e '\n\n\n' && cd attestation && sudo chmod -v +x *.sh && sudo bash -c 'source local/local_config && ./tpm-attestation-build.sh'"
 
-scp -r * azvm:attestation/ && ssh azvm -C "echo -e '\n\n\n' && cd attestation && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-attestation-build.sh'"
+scp -r * azvm:attestation/ && ssh azvm -C "echo -e '\n\n\n' && cd attestation && sudo chmod -v +x *.sh && sudo bash -c 'source local/local_config && ./tpm-attestation-build.sh'"
 
 
 
@@ -44,21 +44,21 @@ ssh azvm -C "sudo rm -vrf tpmsetup && mkdir -vm 0755 tpmsetup" && scp -r * azvm:
 
 Without deleting previous assets, copy repo and run TPM Device Setup GIT BASH:
 
-scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-device-build.sh /media/root 1'"
+scp -r * azvm:repo/ && ssh azvm -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source local/local_config && ./tpm-device-build.sh /media/root 1'"
 
 
 Without deleting previous assets, copy repo and run TPM Device Setup on raspi GIT BASH:
 
-ssh raspi -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * raspi:repo/ && ssh raspi -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-device-build.sh / 0'"
+ssh raspi -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * raspi:repo/ && ssh raspi -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source local/local_config && ./tpm-device-build.sh / 0'"
 
-scp -r * raspi:repo/ && ssh raspi -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-device-build.sh / 0'"
+scp -r * raspi:repo/ && ssh raspi -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source local/local_config && ./tpm-device-build.sh / 0'"
 
 
 Without deleting previous assets, copy repo and run TPM Attestation Setup on raspi GIT BASH:
 
-ssh raspi -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * raspi:repo/ && ssh raspi -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-attestation-build.sh'"
+ssh raspi -C "sudo rm -vrf repo && mkdir -vm 0755 repo" && scp -r * raspi:repo/ && ssh raspi -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source local/local_config && ./tpm-attestation-build.sh'"
 
-scp -r * raspi:repo/ && ssh raspi -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source config/local_config && ./tpm-attestation-build.sh'"
+scp -r * raspi:repo/ && ssh raspi -C "echo -e '\n\n\n' && cd repo && sudo chmod -v +x *.sh && sudo bash -c 'source local/local_config && ./tpm-attestation-build.sh'"
 
 
 
