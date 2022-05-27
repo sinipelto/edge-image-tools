@@ -48,6 +48,9 @@ sasToken=${SAS_TOKEN_URL_QUERY:?"Variable SAS_TOKEN_URL_QUERY is empty or not se
 
 imgVersionUrl="${imgServer}/${os}/${arch}/${versionFile}${sasToken}"
 
+countryCode=${COUNTRYCODE_UPPER_2LETTER?:"Variable COUNTRYCODE_UPPER_2LETTER is empty or not set."}
+localeCode=${LOCALE_LOWER_2LETTER?:"Variable LOCALE_LOWER_2LETTER is empty or not set."}
+
 dateTime=$(${dateBin})
 #isoDate=$(${dateBin} '+%Y-%m-%dT%H:%M:%S')
 
@@ -86,9 +89,9 @@ base_config() {
 	echo "Running system base configurations.."
 
 	# These must be done on a running system => in provision script
-	sed -i 's/^REGDOMAIN=.*/REGDOMAIN=FI/' /etc/default/crda
+	sed -i "s/^REGDOMAIN=.*/REGDOMAIN=${countryCode}/" /etc/default/crda
 	rm -f /etc/xdg/autostart/piwiz.desktop
-	localectl set-x11-keymap "fi" pc105
+	localectl set-x11-keymap "${localeCode}" pc105
 	setupcon -k --force
 
 	# For some systems (e.g. Ubuntu) the initial user(s) are created

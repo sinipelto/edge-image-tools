@@ -151,8 +151,10 @@ aptUnattendedFIle="${aptConfPath}/50unattended-upgrades"
 
 aptDisableUpgradeFile="${configPath}/90-disable-auto-upgrades"
 
+hostnameFilePath="${partRoot}/etc/hostname"
+
 cmdlineFile='cmdline.txt'
-cmdlineFile="${partBoot}/${cmdlineFile}"
+cmdlineFilePath="${partBoot}/${cmdlineFile}"
 
 delOgUser=${DEL_OG_USER} && [ -z "${delOgUser}" ] && echo "Variable DEL_OG_USER is empty or not set." && exit 1
 
@@ -493,7 +495,12 @@ cp -v ${userFileTemplate} ${partBoot}/${userFile}
 
 # NOTE: If disabled part+fs resizing => no free space left on rootfs with RaspiOS!
 # Solution: For raspios the rootfs partition + fs is resized
-sed -i "${resizeLine}" ${cmdlineFile}
+sed -i "${resizeLine}" ${cmdlineFilePath}
+
+# Update system hostname also in hostname file
+cat > ${hostnameFilePath} << EOF
+${deviceHostname}
+EOF
 
 # Extract necessary provisioning bundles for image and install them
 # NOTE: Avoid log flood by not setting verbose
@@ -524,6 +531,8 @@ export IMAGE_VER_FILE='${imgVerFile}'
 export IMAGE_SERVER_URL='${imgServer}'
 export SAS_TOKEN_URL_QUERY='${sasToken}'
 export DPS_ID_SCOPE='${dpsIdScope}'
+export COUNTRYCODE_UPPER_2LETTER='${countryCode}'
+export LOCALE_LOWER_2LETTER='${localeCode}'
 EOF
 chmod -v 0444 "${partParamsFile}"
 
