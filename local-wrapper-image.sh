@@ -7,7 +7,7 @@ userId=$(id -u)
 
 # Read local variables from separate file
 # shellcheck source=/dev/null
-source config/local_config
+source local/local_config
 
 bashBin='/bin/bash'
 

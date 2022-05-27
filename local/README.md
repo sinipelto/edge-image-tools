@@ -8,10 +8,10 @@ local_config - Configuration file containing environment variables suitable for 
 
 ## Usage instructions
 
-Copy all files over from the `../example_config` directory into the `../config` directory.
+Copy all files over from the `../example` directory into the `../local` directory.
 
 ```bash
-cp ../example_config/* ../config/
+cp ../example/* ../local/
 ```
 
 Edit the file(s) to match your requirements.

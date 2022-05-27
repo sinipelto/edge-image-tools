@@ -135,11 +135,11 @@ export TIMEZONE='<TIMEZONE>'
 
 # User name for the created user
 # Set to EMPTY string or remove the variable if the new user should NOT be created
-export BASE_USER='edgeuser'
+export BASE_USER='<BASE_SYSTEM_USER_NAME>'
 
 # Base user local password to be set on the created user
 # Set to EMPTY string or remove the variable if the password should be DISABLED for the base user
-export BASE_USER_PASS='eXaMplePaSS1234'
+export BASE_USER_PASS='<BASE_SYSTEM_USER_PASSWORD>'
 
 # The public SSH key to be delivered for the created user
 # Set EMPTY if no specific public key wanted to be exported

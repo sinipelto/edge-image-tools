@@ -1,11 +1,5 @@
-config/*
-!config/README.md
-
-# NOTE: The image configurations need to be static.
-# Thus create a separate publish branch for CICD building and comment out the following lines.
-# After that add the necessary configuration files based on the files in example_image_files dir.
-image_files/*
-!image_files/README.md
+local/*
+!local/README.md
 
 !.gitignore
 !README.md

@@ -18,7 +18,7 @@ doFlash=${1} && [[ ${doFlash} != 0 && ${doFlash} != 1 ]] && echo "Invalid argume
 [ "${doFlash}" -eq 1 ] && targetDev="${2}" && [ -z "${targetDev}" ] && echo "Given targetDev is empty or not set." && listDevices && exit 1
 [ "${doFlash}" -eq 1 ] && [[ ! -b ${targetDev} ]] && echo "Block device '${targetDev}' does not exist!" && listDevices && exit 1
 
-paramsFile='config/local_config'
+paramsFile='local/local_config'
 
 # Read and parse common variables
 # shellcheck disable=SC1090
