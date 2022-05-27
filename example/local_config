@@ -108,6 +108,14 @@ export PERSISTENCE_SIZE_MBYTES=1024
 # This location will be configured in the /etc/fstab file.
 export PERSISTENCE_MOUNT_POINT='/persistence'
 
+# Set the primary and fallback NTP server hostnames and/or IP addresses for proper time syncing.
+# Without setting these, the time might be synced from an unpredictable time sources
+# (e.g. some ntp servers on the same network that are not using correct or designed time).
+# NOTE: Ensure the hostnames or IP addresses are available and reachable during the provisioning process.
+# For example servers, see e.g. https://www.ntppool.org/
+export NTP_SERVERS='<SPACE_SEPARATED_NTP_SERVERS>'
+export FALLBACK_NTP_SERVERS='<SPACE_SEPARATED_FALLBACK_NTP_SERVERS>'
+
 # Use the following SSID and credentials to authenticate into a WLAN access point.
 # Should be always set (required), even though not used to generate the configuration files properly.
 # Fallbacks to Ethernet DHCP connection in case cannot connect to the WLAN spcecified access point.

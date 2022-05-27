@@ -70,6 +70,9 @@ timezone=${TIMEZONE:?"Variable TIMEZONE is empty or not set."}
 
 deviceHostname=${DEVICE_HOSTNAME:?"Variable DEVICE_HOSTNAME is empty or not set."}
 
+ntpServers=${NTP_SERVERS:?"Variable NTP_SERVERS is empty or not set."}
+ntpFallbackServers=${FALLBACK_NTP_SERVERS:?"Variable FALLBACK_NTP_SERVERS is empty or not set."}
+
 zeroDev='/dev/zero'
 
 partBoot='/mnt_boot' # Boot
@@ -140,6 +143,17 @@ countryCodeReplaceLine="s/${countryCodeReplaceVar}/${countryCode//\//\\/}/g"
 localeCodeReplaceLine="s/${localeCodeReplaceVar}/${localeCode//\//\\/}/g"
 hostnameReplaceLine="s/${hostnameReplaceVar}/${deviceHostname//\//\\/}/g"
 timezoneReplaceLine="s/${timezoneReplaceVar}/${timezone//\//\\/}/g"
+
+
+timesyncFile='timesyncd.conf'
+timesyncFileTemplate="${templatePath}/${timesyncFile}.template"
+timesyncPath="${partRoot}/etc/systemd"
+
+ntpServersReplaceVar='<NTP_SERVERS>'
+ntpFallbackServersReplaceVar='<FALLBACK_NTP_SERVERS>'
+
+ntpServersReplaceLine="s/${ntpServersReplaceVar}/${ntpServers//\//\\/}/g"
+ntpFallbackServersReplaceLine="s/${ntpFallbackServersReplaceVar}/${ntpFallbackServers//\//\\/}/g"
 
 edgeConfigFileTemplate="${templatePath}/edge-config-tpm.toml.template"
 
@@ -558,6 +572,13 @@ rm -vf ${aptUnattendedFIle}
 
 # Set high level config for disabling auto upgrades
 cp -v ${aptDisableUpgradeFile} ${aptConfPath}/
+
+# Set the timesyncd config for syncing time with proper NTP servers
+# Ensuring that e.g. package manager caches will be in sync
+sed -i "${ntpServersReplaceLine}" ${timesyncFileTemplate}
+sed -i "${ntpFallbackServersReplaceLine}" ${timesyncFileTemplate}
+
+cp -v ${timesyncFileTemplate} ${timesyncPath}/${timesyncFile}
 
 # Install tpm bundle both locally and on target image
 # TODO ensure all old files (not dirs) deleted first!
