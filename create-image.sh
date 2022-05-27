@@ -599,7 +599,7 @@ swtpm_setup \
 	--display \
 	--vmid iotedge-base-image
 
-cp -vrT ${tpmLocalCaPath} ${partRoot}/${tpmLocalCaPath}
+cp -vrT ${tpmLocalCaPath} ${partRoot}${tpmLocalCaPath}
 
 swtpm socket \
 	--runas 0 \
