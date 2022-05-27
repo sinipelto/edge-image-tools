@@ -91,7 +91,7 @@ persistenceLabel='persistence'
 templatePath='templates'
 servicePath='services'
 binPath='pre-built'
-aptPath='apt'
+configPath='config'
 
 qemuBin="qemu-${imgArch}-static"
 bashBin='/bin/bash'
@@ -143,13 +143,13 @@ timezoneReplaceLine="s/${timezoneReplaceVar}/${timezone//\//\\/}/g"
 
 edgeConfigFileTemplate="${templatePath}/edge-config-tpm.toml.template"
 
-aptConfPath=${partRoot}/etc/apt/apt.conf.d
+aptConfPath="${partRoot}/etc/apt/apt.conf.d"
 
 aptPeriodicFile="${aptConfPath}/10periodic"
 aptAutoFile="${aptConfPath}/20auto-upgrades"
 aptUnattendedFIle="${aptConfPath}/50unattended-upgrades"
 
-aptDisableUpgradeFile="${aptPath}/90-disable-auto-upgrades"
+aptDisableUpgradeFile="${configPath}/90-disable-auto-upgrades"
 
 cmdlineFile='cmdline.txt'
 cmdlineFile="${partBoot}/${cmdlineFile}"
