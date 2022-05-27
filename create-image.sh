@@ -91,6 +91,7 @@ persistenceLabel='persistence'
 templatePath='templates'
 servicePath='services'
 binPath='pre-built'
+aptPath='apt'
 
 qemuBin="qemu-${imgArch}-static"
 bashBin='/bin/bash'
@@ -141,6 +142,14 @@ hostnameReplaceLine="s/${hostnameReplaceVar}/${deviceHostname//\//\\/}/g"
 timezoneReplaceLine="s/${timezoneReplaceVar}/${timezone//\//\\/}/g"
 
 edgeConfigFileTemplate="${templatePath}/edge-config-tpm.toml.template"
+
+aptConfPath=${partRoot}/etc/apt/apt.conf.d
+
+aptPeriodicFile="${aptConfPath}/10periodic"
+aptAutoFile="${aptConfPath}/20auto-upgrades"
+aptUnattendedFIle="${aptConfPath}/50unattended-upgrades"
+
+aptDisableUpgradeFile="${aptPath}/90-disable-auto-upgrades"
 
 cmdlineFile='cmdline.txt'
 cmdlineFile="${partBoot}/${cmdlineFile}"
@@ -487,6 +496,7 @@ cp -v ${userFileTemplate} ${partBoot}/${userFile}
 sed -i "${resizeLine}" ${cmdlineFile}
 
 # Extract necessary provisioning bundles for image and install them
+# NOTE: Avoid log flood by not setting verbose
 rm -rf ${provBundlePath}
 tar -xzkf "${attesBundleZip}" -C .
 
@@ -531,6 +541,14 @@ ${baseUser} ALL=(ALL) NOPASSWD:ALL
 EOF
 chmod -v 0440 "${sudoersFile}"
 fi
+
+# Remove APT unattended upgrades configuration files
+rm -vf ${aptPeriodicFile}
+rm -vf ${aptAutoFile}
+rm -vf ${aptUnattendedFIle}
+
+# Set high level config for disabling auto upgrades
+cp -v ${aptDisableUpgradeFile} ${aptConfPath}/
 
 # Install tpm bundle both locally and on target image
 # TODO ensure all old files (not dirs) deleted first!
@@ -598,6 +616,7 @@ tpm2-abrmd -o -t 'swtpm' &
 sleep 1
 
 # Extract and install the prov client tools for host
+# NOTE: Disable verbosity to not flood logs
 rm -rf ${provBundlePath}
 tar -xzf "${attesBundleZipHost}" -C .
 
