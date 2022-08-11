@@ -4,9 +4,21 @@
 
 ## General information
 
-Imaging tools for creating and publishing images ready for Azure IoT Edge.
+Toolset for creating and publishing OS images with automated TPM attestation process for Azure IoT Edge.
 
-Designed to be run in a pipeline, using e.g. Azure pipelines.
+Designed to be run in a pipeline, using e.g. Azure pipelines but can be run locally for testing purposes, too.
+
+The main idea is to bring automation into the process of fetching a suitable Operating System, installing and configuring 
+necesary tools and software onto the OS image, then upload it in a cloud storage available for OTA updates for newer versions of the image.
+The second phase consists of initially downloading the image file, flashing it onto a IoT Edge device with a functioning TPM chip and finally
+taking that device onto the target premises. After setting up the device and booting it for the first time, the third phase would automate the
+process of connecting to a network, connecting to Azure, establishing communication with Azure DPS Service and Azure IoT Hub, verifying the device 
+identity using Azure DPS by using TPM attestation, with pre-registered details in the DPS service for the device to be able to provision itself, 
+fetch its configuration and start operating with the IoT Hub.
+
+The whole process is illustrated in the Figure below:
+
+![Azure IoT Edge Deployment Process](/assets/edge_deployment.png)
 
 ## Repository structure
 
