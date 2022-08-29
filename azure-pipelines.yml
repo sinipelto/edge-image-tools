@@ -18,7 +18,7 @@ parameters:
       - custom
 
 variables:
-- group: ${{ parameters.whichGroup }}
+- group: 'edge-deployment-${{ parameters.whichGroup }}'
 
 steps:
 - task: Bash@3
