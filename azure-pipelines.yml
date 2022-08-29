@@ -7,7 +7,7 @@ pool:
   vmImage: ubuntu-20.04
 
 variables:
-- group: edge-image-deployment
+- group: edge-image-deployment-home
 
 steps:
 - task: Bash@3
